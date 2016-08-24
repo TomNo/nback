@@ -49,6 +49,11 @@ class GameScreen(Screen):
         self.add_widget(self.game)
         self.game.start()
 
+    def on_leave(self, *args):
+        Clock.unschedule(self.game.step)
+        self.remove_widget(self.game)
+        self.game = None
+
 
 class CellLabel(Label):
     pass
@@ -78,11 +83,11 @@ class GameLayout(GridLayout):
         self.p_btn = Button(text="position", on_release=self.pos_callback)
         self.add_widget(self.p_btn)
         self.n_btn = Button(text="shape", on_release=self.num_callback)
+
         self.add_widget(self.n_btn)
         # disable buttons at the start
         self.p_btn.disabled = True
         self.n_btn.disabled = True
-
 
     def pos_callback(self, instance):
         self.p_clicked = True
