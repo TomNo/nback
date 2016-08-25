@@ -1,6 +1,10 @@
 # kivy configuration should precede
 # any 'kivy' related import
+import os
+
 from kivy import Config
+from kivy.properties import ObjectProperty
+
 Config.set('kivy', 'exit_on_escape', '0')
 Config.write()
 
@@ -9,6 +13,7 @@ from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.config import ConfigParser
 
 import game
 import settings
@@ -58,7 +63,13 @@ class ScreenHistoryManager(ScreenManager):
 
 
 class NBackApp(App):
+
+    SETTINGS_FILENAME = "config.ini"
+
+    config = ObjectProperty(None)
+
     def build(self):
+        self._load_settings()
         self.sm = ScreenHistoryManager()
         self.sm.add_widget(MenuScreen(name='menu'))
         self.sm.add_widget(game.GameScreen(name='game'))
@@ -73,6 +84,12 @@ class NBackApp(App):
                 self.sm.move_to_previous_screen()
             except IndexError:
                 self.stop()
+
+    def _load_settings(self):
+        self.config = ConfigParser()
+        if not os.path.exists(self.SETTINGS_FILENAME):
+            raise IOError("Cannot locate configuration file.")
+        self.config.read(self.SETTINGS_FILENAME)
 
 if __name__ == '__main__':
     NBackApp().run()

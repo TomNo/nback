@@ -44,6 +44,7 @@ class GameScreen(BasicScreen):
     def on_enter(self, *args):
         self.game = GameLayout()
         self.add_widget(self.game)
+        self.game.build()
         self.game.start()
 
     def on_leave(self, *args):
@@ -60,11 +61,10 @@ RED = (1,0,0)
 
 class GameLayout(GridLayout):
 
-    def __init__(self, **kwargs):
-        super(self.__class__, self).__init__(**kwargs)
+    def build(self):
         self.cols = 3
         self.rows = 4
-        self.history = 3
+        self.history = int(self.parent.config.get("game", "level"))
         self.spacing = 10
         self.max_iter = 10
         self.p_clicked = False
