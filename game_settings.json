@@ -5,5 +5,19 @@
     "desc": "Set the 'N'-back level",
     "section": "game",
     "key":"level"
+  },
+  {
+    "type": "numeric",
+    "title": "Tested items",
+    "desc": "How many items will be present in one session",
+    "section": "game",
+    "key":"max_iter"
+  },
+  {
+    "type": "numeric",
+    "title": "Item duration",
+    "desc": "How long should be one cell visible in seconds",
+    "section": "game",
+    "key":"step_duration"
   }
 ]

@@ -31,9 +31,9 @@ class Statistics(object):
         s_rate = 1 - ((self.p_errors + self.n_errors) / (2 * self.iters))
         s_rate *= 100
         return "Samples count: %s\n"\
-               "Correct positions: %s%%\n"\
-               "Correct numbers: %s%%\n"\
-               "Overall success: %s%%" % (self.iters,
+               "Correct positions: %.2f%%\n"\
+               "Correct numbers: %.2f%%\n"\
+               "Overall success: %.2f%%" % (self.iters,
                                           c_pos,
                                           c_num,
                                           s_rate)
@@ -61,12 +61,21 @@ RED = (1,0,0)
 
 class GameLayout(GridLayout):
 
+    GAME_CONFIG_SECTION = "game"
+
+    def _get_config(self, opt_name):
+        return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
+
+    def _set_config_vals(self):
+        self.history = int(self._get_config("level"))
+        self.max_iter = int(self._get_config("max_iter"))
+        self.step_duration = float(self._get_config("step_duration"))
+
     def build(self):
+        self._set_config_vals()
         self.cols = 3
         self.rows = 4
-        self.history = int(self.parent.config.get("game", "level"))
         self.spacing = 10
-        self.max_iter = 10
         self.p_clicked = False
         self.n_clicked = False
         self.stats = Statistics()
@@ -94,9 +103,6 @@ class GameLayout(GridLayout):
         self.n_clicked = True
         instance.disabled = True
 
-    def update(self):
-        pass
-
     def rand_num(self):
         return randint(0, 8)
 
@@ -112,7 +118,7 @@ class GameLayout(GridLayout):
         self.iter = 0
         self.pos_list = []
         self.num_list = []
-        Clock.schedule_interval(self.step, 1.5)
+        Clock.schedule_interval(self.step, self.step_duration)
 
     def evaluate(self):
         # using xor
