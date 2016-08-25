@@ -1,0 +1,9 @@
+[
+  {
+    "type": "numeric",
+    "title": "Level",
+    "desc": "Set the 'N'-back level",
+    "section": "N-back",
+    "key":"level"
+  }
+]
