@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from basic_screen import BasicScreen
 
 __author__ = 'Tomas Novacik'
 
@@ -10,7 +11,6 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-from kivy.uix.screenmanager import Screen
 
 
 class Statistics(object):
@@ -39,10 +39,7 @@ class Statistics(object):
                                           s_rate)
 
 
-class GameScreen(Screen):
-
-    def __init__(self, **kwargs):
-        super(self.__class__, self).__init__(**kwargs)
+class GameScreen(BasicScreen):
 
     def on_enter(self, *args):
         self.game = GameLayout()
@@ -134,7 +131,7 @@ class GameLayout(GridLayout):
         layout.add_widget(Label(text=str(self.stats)))
         def to_menu(instance):
             popup.dismiss()
-            self.parent.manager.current = "menu"
+            self.parent.manager.move_to_previous_screen()
         btn = Button(text="okay", on_press=to_menu, size=(100,100))
         layout.add_widget(btn)
         popup = Popup(title='Game finished',
