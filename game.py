@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from basic_screen import BasicScreen
+from kivy.core.window import Window
 
 __author__ = 'Tomas Novacik'
 
@@ -11,6 +11,8 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+
+from basic_screen import BasicScreen
 
 
 class Statistics(object):
@@ -71,6 +73,13 @@ class GameLayout(GridLayout):
         self.max_iter = int(self._get_config("max_iter"))
         self.step_duration = float(self._get_config("step_duration"))
 
+    def _action_keys(self, window, key, *args):
+        # bind to 'position match' and 'shape match'
+        if key == ord('a') and not self.p_clicked:
+            self.p_btn.trigger_action()
+        elif key == ord('f') and not self.n_clicked:
+            self.n_btn.trigger_action()
+
     def build(self):
         self._set_config_vals()
         self.cols = 3
@@ -86,9 +95,9 @@ class GameLayout(GridLayout):
             self.cells.append(label)
             self.add_widget(label)
 
-        self.p_btn = Button(text="position", on_release=self.pos_callback)
+        self.p_btn = Button(text="A: Position match", on_release=self.pos_callback)
         self.add_widget(self.p_btn)
-        self.n_btn = Button(text="shape", on_release=self.num_callback)
+        self.n_btn = Button(text="F: Shape match", on_release=self.num_callback)
 
         self.add_widget(self.n_btn)
         # disable buttons at the start
@@ -152,6 +161,7 @@ class GameLayout(GridLayout):
 
         if self.iter >= self.max_iter:
             Clock.unschedule(self.step)
+            Window.unbind(on_keyboard=self._action_keys)
             self.p_btn.disabled = True
             self.n_btn.disabled = True
             self.display_statistics()
@@ -169,6 +179,7 @@ class GameLayout(GridLayout):
         if self.iter >= self.history - 1:
             self.p_btn.disabled = False
             self.n_btn.disabled = False
+            Window.bind(on_keyboard=self._action_keys)
         self.iter += 1
 
 # eof
