@@ -4,6 +4,8 @@ import os
 
 from kivy import Config
 from kivy.properties import ObjectProperty
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.gridlayout import GridLayout
 
 Config.set('kivy', 'exit_on_escape', '0')
 Config.write()
@@ -25,20 +27,32 @@ BACK_KEY_CODES = [27, 1001]
 
 class MenuScreen(Screen):
 
-    def __init__(self, **kwargs):
-        super(self.__class__, self).__init__(**kwargs)
-        layout = BoxLayout(orientation='vertical')
+    MENU_SPACING = 10
+    MENU_SIZE_HINT = (.1, .1)
+
+    def on_enter(self, *args):
+        self.menu_layout = AnchorLayout()
+
+        box_layout = BoxLayout(spacing=self.MENU_SPACING,
+                               size_hint = self.MENU_SIZE_HINT,
+                               orientation='vertical')
+
         def to_game_screen(instance):
             self.manager.current = "game"
 
         def to_settings_screen(instance):
             self.manager.current = "settings"
 
-        start_btn = Button(text="start game", on_press=to_game_screen)
-        settings_btn = Button(text="settings", on_press=to_settings_screen)
-        layout.add_widget(start_btn)
-        layout.add_widget(settings_btn)
-        self.add_widget(layout)
+        start_btn = Button(text="Start game", on_press=to_game_screen)
+        settings_btn = Button(text="Settings", on_press=to_settings_screen)
+        box_layout.add_widget(start_btn)
+        box_layout.add_widget(settings_btn)
+        self.menu_layout.add_widget(box_layout)
+        self.add_widget(self.menu_layout)
+
+    def on_leave(self, *args):
+        self.remove_widget(self.menu_layout)
+        del self.menu_layout
 
 
 class ScreenHistoryManager(ScreenManager):
