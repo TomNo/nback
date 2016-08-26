@@ -34,7 +34,7 @@ class Statistics(object):
         s_rate *= 100
         return "Samples count: %s\n"\
                "Correct positions: %.2f%%\n"\
-               "Correct numbers: %.2f%%\n"\
+               "Correct shapes: %.2f%%\n"\
                "Overall success: %.2f%%" % (self.iters,
                                           c_pos,
                                           c_num,
@@ -58,8 +58,9 @@ class GameScreen(BasicScreen):
 class CellLabel(Label):
     pass
 
-GREEN = (0,1,0)
-RED = (1,0,0)
+GREEN = (0,1,0,1)
+RED = (1,0,0,1)
+
 
 class GameLayout(GridLayout):
 
@@ -67,6 +68,8 @@ class GameLayout(GridLayout):
     POSITION_MATCH_KEYBIND = ord('a')
     SHAPE_MATCH_KEYBIND = ord('f')
     CLEAR_INTERVAL = 0.1
+    EVALUATE_INTERVAL = 1
+    DEFAULT_BUTTON_COLOR = (1, 1, 1, 1)
 
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
@@ -134,7 +137,7 @@ class GameLayout(GridLayout):
         Clock.schedule_interval(self._clear_cell,
                                 self.step_duration - self.CLEAR_INTERVAL)
 
-    def evaluate(self):
+    def _evaluate(self, dt):
         # using xor
         p_err = self.pos_list[0] == self.a_pos ^ self.p_clicked
         n_err = self.num_list[0] == self.a_num ^ self.n_clicked
@@ -164,8 +167,8 @@ class GameLayout(GridLayout):
         self.a_cell.text = ""
 
     def step(self, dt):
-        if self.iter >= self.history:
-            self.evaluate()
+        if self.iter >= (self.history - 1):
+            Clock.schedule_once(self._evaluate, dt - self.EVALUATE_INTERVAL)
 
         if self.iter >= self.max_iter:
             Clock.unschedule(self.step)
@@ -186,6 +189,8 @@ class GameLayout(GridLayout):
 
         # enable buttons if it make sense to click
         if self.iter >= self.history - 1:
+            self.p_btn.background_color = self.DEFAULT_BUTTON_COLOR
+            self.n_btn.background_color = self.DEFAULT_BUTTON_COLOR
             self.p_btn.disabled = False
             self.n_btn.disabled = False
             Window.bind(on_keyboard=self._action_keys)
