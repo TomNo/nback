@@ -64,6 +64,9 @@ RED = (1,0,0)
 class GameLayout(GridLayout):
 
     GAME_CONFIG_SECTION = "game"
+    POSITION_MATCH_KEYBIND = ord('a')
+    SHAPE_MATCH_KEYBIND = ord('f')
+    CLEAR_INTERVAL = 0.1
 
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
@@ -75,9 +78,9 @@ class GameLayout(GridLayout):
 
     def _action_keys(self, window, key, *args):
         # bind to 'position match' and 'shape match'
-        if key == ord('a') and not self.p_clicked:
+        if key == self.POSITION_MATCH_KEYBIND and not self.p_clicked:
             self.p_btn.trigger_action()
-        elif key == ord('f') and not self.n_clicked:
+        elif key == self.SHAPE_MATCH_KEYBIND and not self.n_clicked:
             self.n_btn.trigger_action()
 
     def build(self):
@@ -128,6 +131,8 @@ class GameLayout(GridLayout):
         self.pos_list = []
         self.num_list = []
         Clock.schedule_interval(self.step, self.step_duration)
+        Clock.schedule_interval(self._clear_cell,
+                                self.step_duration - self.CLEAR_INTERVAL)
 
     def evaluate(self):
         # using xor
@@ -135,9 +140,10 @@ class GameLayout(GridLayout):
         n_err = self.num_list[0] == self.a_num ^ self.n_clicked
         self.stats.add_result(p_err, n_err)
 
-        if self.pos_list[0] == self.a_pos or self.p_clicked \
-            or self.num_list[0] == self.a_num or self.n_clicked:
+        # change buttons background color depending on success/fail
+        if self.pos_list[0] == self.a_pos or self.p_clicked:
             self.p_btn.background_color = RED if p_err else GREEN
+        if self.num_list[0] == self.a_num or self.n_clicked:
             self.n_btn.background_color = RED if n_err else GREEN
 
 
@@ -154,20 +160,23 @@ class GameLayout(GridLayout):
             size_hint=(None, None), size=(200, 200))
         popup.open()
 
+    def _clear_cell(self, dt):
+        self.a_cell.text = ""
+
     def step(self, dt):
         if self.iter >= self.history:
             self.evaluate()
-        self.a_cell.text = ""
 
         if self.iter >= self.max_iter:
             Clock.unschedule(self.step)
+            Clock.unschedule(self._clear_cell)
             Window.unbind(on_keyboard=self._action_keys)
             self.p_btn.disabled = True
             self.n_btn.disabled = True
             self.display_statistics()
             return
 
-        if len(self.pos_list) > self.history:
+        if len(self.pos_list) >= self.history:
             del(self.pos_list[0])
             del(self.num_list[0])
 
@@ -181,5 +190,4 @@ class GameLayout(GridLayout):
             self.n_btn.disabled = False
             Window.bind(on_keyboard=self._action_keys)
         self.iter += 1
-
 # eof
