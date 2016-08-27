@@ -317,7 +317,7 @@ class GameLayout(GridLayout):
             Window.bind(on_keyboard=self._action_keys)
 
     def get_stats(self):
-        total_iters = self.iter - self.history
+        total_iters = float(self.iter - self.history)
         c_position = (1 - self.p_errors / total_iters) * 100
         c_shape = (1 - self.s_errors / total_iters) * 100
         all_errors = self.p_errors + self.s_errors
