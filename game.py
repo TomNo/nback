@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import unittest
-from ansible.compat.tests import mock
 
 from kivy.core.window import Window
+from kivy.uix.anchorlayout import AnchorLayout
 
 __author__ = 'Tomas Novacik'
 
-from random import randint
+import random
+import mock
 
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
@@ -15,7 +16,6 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-
 
 from basic_screen import BasicScreen
 
@@ -31,59 +31,59 @@ class TestGameEvaluation(unittest.TestCase):
         self.game = GameLayout()
         self.game._set_config_vals = mock.MagicMock()
         self.game.build()
-        self.game.pos_list = [self.PREV_POSITION]
-        self.game.num_list = [self.PREV_SHAPE]
-        self.game.a_num = self.PREV_SHAPE
-        self.game.a_pos = self.PREV_POSITION
+        self.game.positions = [self.PREV_POSITION]
+        self.game.shapes = [self.PREV_SHAPE]
+        self.game.a_shape = self.PREV_SHAPE
+        self.game.a_position = self.PREV_POSITION
 
     def _game_eval(self):
         # eval must be called with some delta time
         self.game._evaluate(self.GUI_DT)
 
     def test_mistake_shape_clicked(self):
-        self.game.a_num = self.PREV_SHAPE + 1
+        self.game.a_shape = self.PREV_SHAPE + 1
         self.game.n_clicked = True
         self._game_eval()
         self.assertTrue(self.game.n_err)
 
     def test_mistake_shape_not_clicked(self):
-        self.game.a_num = self.PREV_SHAPE
+        self.game.a_shape = self.PREV_SHAPE
         self.game.n_clicked = False
         self._game_eval()
         self.assertTrue(self.game.n_err)
 
     def test_mistake_position_clicked(self):
-        self.game.a_pos = self.PREV_POSITION + 1
+        self.game.a_position = self.PREV_POSITION + 1
         self.game.p_clicked = True
         self._game_eval()
         self.assertTrue(self.game.p_err)
 
     def test_mistake_position_not_clicked(self):
-        self.game.a_pos = self.PREV_POSITION
+        self.game.a_position = self.PREV_POSITION
         self.game.p_clicked = False
         self._game_eval()
         self.assertTrue(self.game.p_err)
 
     def test_success_position_clicked(self):
-        self.game.a_pos = self.PREV_POSITION
+        self.game.a_position = self.PREV_POSITION
         self.game.p_clicked = True
         self._game_eval()
         self.assertFalse(self.game.p_err)
 
     def test_success_position_not_clicked(self):
-        self.game.a_pos = self.PREV_POSITION + 1
+        self.game.a_position = self.PREV_POSITION + 1
         self.game.p_clicked = False
         self._game_eval()
         self.assertFalse(self.game.p_err)
 
     def test_success_shape_clicked(self):
-        self.game.a_num = self.PREV_SHAPE
+        self.game.a_shape = self.PREV_SHAPE
         self.game.n_clicked = True
         self._game_eval()
         self.assertFalse(self.game.n_err)
 
     def test_success_shape_not_clicked(self):
-        self.game.a_num = self.PREV_SHAPE + 1
+        self.game.a_shape = self.PREV_SHAPE + 1
         self.game.n_clicked = False
         self._game_eval()
         self.assertFalse(self.game.n_err)
@@ -153,10 +153,13 @@ class GameLayout(GridLayout):
     GAME_CONFIG_SECTION = "game"
     POSITION_MATCH_KEYBIND = ord('a')
     SHAPE_MATCH_KEYBIND = ord('f')
-    CLEAR_INTERVAL = 0.1
-    EVALUATE_INTERVAL = 1
+    CLEAR_INTERVAL = 0.2
+    EVALUATE_INTERVAL = 0.3
     DEFAULT_BUTTON_COLOR = (0.8, 0.8, 0.8, 1)
     BTN_SIZE_HINT = (0.3, 0.3)
+    SHAPES = range(1,10)
+    POSITIONS = range(9)
+    STATS_POPUP_SIZE_HINT = (.35, .35)
 
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
@@ -190,69 +193,79 @@ class GameLayout(GridLayout):
 
         self.p_btn = Button(text="A: Position match",
                             size_hint=self.BTN_SIZE_HINT,
-                            on_release=self.pos_callback)
+                            on_release=self.position_callback)
         self.add_widget(self.p_btn)
         self.n_btn = Button(text="F: Shape match", size_hint=self.BTN_SIZE_HINT,
-                            on_release=self.num_callback)
+                            on_release=self.shape_callback)
 
         self.add_widget(self.n_btn)
         # disable buttons at the start
         self.p_btn.disabled = True
         self.n_btn.disabled = True
 
-    def pos_callback(self, instance):
+    def position_callback(self, instance):
         self.p_clicked = True
 
-    def num_callback(self, instance):
+    def shape_callback(self, instance):
         self.n_clicked = True
 
-    def rand_num(self):
-        return randint(0, 8)
+    def rand_shape(self):
+        return random.choice(self.SHAPES + self.shapes)
+
+    def rand_position(self):
+        return random.choice(self.POSITIONS + self.positions)
 
     def new_cell(self):
-        self.a_num, self.a_pos = self.rand_num(), self.rand_num()
-        self.a_cell = self.cells[self.a_pos]
-        self.a_cell.text = str(self.a_num)
+        self.a_shape, self.a_position = self.rand_shape(), self.rand_position()
+        self.actual_cell = self.cells[self.a_position]
+        self.actual_cell.text = str(self.a_shape)
         self.p_clicked = False
         self.n_clicked = False
 
     def start(self):
-        self.new_cell()
         self.iter = 0
-        self.pos_list = []
-        self.num_list = []
+        self.positions = []
+        self.shapes = []
+
+        self.new_cell()
         Clock.schedule_interval(self.step, self.step_duration)
-        Clock.schedule_interval(self._clear_cell,
-                                self.step_duration - self.CLEAR_INTERVAL)
+        self._schedule_cell_clearing()
 
     def _evaluate(self, dt):
         # using xor
-        self.p_err = (self.pos_list[0] == self.a_pos) != self.p_clicked
-        self.n_err = (self.num_list[0] == self.a_num) != self.n_clicked
+        self.p_err = (self.positions[0] == self.a_position) != self.p_clicked
+        self.n_err = (self.shapes[0] == self.a_shape) != self.n_clicked
         self.stats.add_result(self.p_err, self.n_err)
 
         # change buttons background color depending on success/fail
-        if self.pos_list[0] == self.a_pos or self.p_clicked:
+        if self.positions[0] == self.a_position or self.p_clicked:
             self.p_btn.background_color = RED if self.p_err else GREEN
-        if self.num_list[0] == self.a_num or self.n_clicked:
+        if self.shapes[0] == self.a_shape or self.n_clicked:
             self.n_btn.background_color = RED if self.n_err else GREEN
 
 
     def display_statistics(self):
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text=str(self.stats)))
+        layout.add_widget(Label(text=str(self.stats), font_size='20sp'))
         def to_menu(instance):
             popup.dismiss()
             self.parent.manager.move_to_previous_screen()
-        btn = Button(text="okay", on_press=to_menu, size=(100,100))
-        layout.add_widget(btn)
+        anchor_layout = AnchorLayout(anchor_x='right', anchor_y='center')
+        btn = Button(text="ok", on_press=to_menu,
+                     size_hint=self.BTN_SIZE_HINT)
+        anchor_layout.add_widget(btn)
+        layout.add_widget(anchor_layout)
         popup = Popup(title='Game finished',
-            content=layout, auto_dismiss=False,
-            size_hint=(None, None), size=(200, 200))
+            content=layout, auto_dismiss=True,
+            size_hint=self.STATS_POPUP_SIZE_HINT)
         popup.open()
 
     def _clear_cell(self, dt):
-        self.a_cell.text = ""
+        self.actual_cell.text = ""
+
+    def _schedule_cell_clearing(self):
+        Clock.schedule_once(self._clear_cell,
+                            self.step_duration - self.CLEAR_INTERVAL)
 
     def step(self, dt):
         if self.iter >= (self.history - 1):
@@ -260,19 +273,20 @@ class GameLayout(GridLayout):
 
         if self.iter >= self.max_iter:
             Clock.unschedule(self.step)
-            Clock.unschedule(self._clear_cell)
             Window.unbind(on_keyboard=self._action_keys)
             self.p_btn.disabled = True
             self.n_btn.disabled = True
             self.display_statistics()
             return
+        else:
+            self._schedule_cell_clearing()
 
-        if len(self.pos_list) >= self.history:
-            del(self.pos_list[0])
-            del(self.num_list[0])
+        if len(self.positions) >= self.history:
+            del(self.positions[0])
+            del(self.shapes[0])
 
-        self.pos_list.append(self.a_pos)
-        self.num_list.append(self.a_num)
+        self.positions.append(self.a_position)
+        self.shapes.append(self.a_shape)
         self.new_cell()
 
         # enable buttons if it make sense to click
