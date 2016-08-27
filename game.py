@@ -2,6 +2,7 @@
 import unittest
 
 from kivy.core.window import Window
+from kivy.properties import NumericProperty
 from kivy.uix.anchorlayout import AnchorLayout
 
 __author__ = 'Tomas Novacik'
@@ -89,32 +90,6 @@ class TestGameEvaluation(unittest.TestCase):
         self.assertFalse(self.game.n_err)
 
 
-class Statistics(object):
-
-    def __init__(self):
-        self.p_errors = 0.0
-        self.n_errors = 0.0
-        self.iters = 0.0
-
-    def add_result(self, pos, num):
-        self.iters += 1
-        self.p_errors += pos
-        self.n_errors += num
-
-    def __str__(self):
-        c_pos = (1 - self.p_errors / self.iters) * 100
-        c_num = (1 - self.n_errors / self.iters) * 100
-        s_rate = 1 - ((self.p_errors + self.n_errors) / (2 * self.iters))
-        s_rate *= 100
-        return "Samples count: %s\n"\
-               "Correct positions: %.2f%%\n"\
-               "Correct shapes: %.2f%%\n"\
-               "Overall success: %.2f%%" % (self.iters,
-                                          c_pos,
-                                          c_num,
-                                          s_rate)
-
-
 class GameScreen(BasicScreen):
 
     def __init__(self, *args, **kwargs):
@@ -160,6 +135,12 @@ class GameLayout(GridLayout):
     SHAPES = range(1,10)
     POSITIONS = range(9)
     STATS_POPUP_SIZE_HINT = (.35, .35)
+    INFO_LABEL_SIZE_HINT = (.1, .1)
+    GRID_SIZE = 9
+
+    iter = NumericProperty(None)
+    p_errors = NumericProperty(None)
+    s_errors = NumericProperty(None)
 
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
@@ -179,14 +160,37 @@ class GameLayout(GridLayout):
     def build(self):
         self._set_config_vals()
         self.cols = 3
-        self.rows = 4
+        self.rows = 5
         self.spacing = 5
-        self.p_clicked = False
-        self.n_clicked = False
-        self.stats = Statistics()
+
+        def create_info_label():
+            return Label(size_hint=self.INFO_LABEL_SIZE_HINT)
+
+        position_info = create_info_label()
+        shape_info = create_info_label()
+        overall_info = create_info_label()
+
+        def update_position_info(instance, value):
+            position_info.text = "Incorrect positions: %s" % value
+
+        self.bind(p_errors=update_position_info)
+
+        def update_shape_info(instance, value):
+            shape_info.text = "Incorrect shapes: %s" % value
+
+        self.bind(s_errors=update_shape_info)
+
+        def update_overall_info(instance, value):
+            overall_info.text = "%s / %s" %(value, self.max_iter)
+
+        self.bind(iter=update_overall_info)
+
+        self.add_widget(position_info)
+        self.add_widget(shape_info)
+        self.add_widget(overall_info)
 
         self.cells = []
-        for _ in xrange(self.cols * self.rows - 3):
+        for _ in xrange(self.GRID_SIZE):
             label = CellLabel()
             self.cells.append(label)
             self.add_widget(label)
@@ -224,6 +228,12 @@ class GameLayout(GridLayout):
 
     def start(self):
         self.iter = 0
+        self.s_errors = 0
+        self.p_errors = 0
+
+        self.p_clicked = False
+        self.n_clicked = False
+
         self.positions = []
         self.shapes = []
 
@@ -235,7 +245,9 @@ class GameLayout(GridLayout):
         # using xor
         self.p_err = (self.positions[0] == self.a_position) != self.p_clicked
         self.n_err = (self.shapes[0] == self.a_shape) != self.n_clicked
-        self.stats.add_result(self.p_err, self.n_err)
+
+        self.p_errors += self.p_err
+        self.s_errors += self.n_err
 
         # change buttons background color depending on success/fail
         if self.positions[0] == self.a_position or self.p_clicked:
@@ -246,7 +258,7 @@ class GameLayout(GridLayout):
 
     def display_statistics(self):
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text=str(self.stats), font_size='20sp'))
+        layout.add_widget(Label(text=self.get_stats(), font_size='20sp'))
         def to_menu(instance):
             popup.dismiss()
             self.parent.manager.move_to_previous_screen()
@@ -268,7 +280,9 @@ class GameLayout(GridLayout):
                             self.step_duration - self.CLEAR_INTERVAL)
 
     def step(self, dt):
-        if self.iter >= (self.history - 1):
+        self.iter += 1
+
+        if self.iter >= self.history and self.iter < self.max_iter:
             Clock.schedule_once(self._evaluate, dt - self.EVALUATE_INTERVAL)
 
         if self.iter >= self.max_iter:
@@ -290,11 +304,25 @@ class GameLayout(GridLayout):
         self.new_cell()
 
         # enable buttons if it make sense to click
-        if self.iter >= self.history - 1:
+        if self.iter >= self.history:
             self.p_btn.background_color = self.DEFAULT_BUTTON_COLOR
             self.n_btn.background_color = self.DEFAULT_BUTTON_COLOR
             self.p_btn.disabled = False
             self.n_btn.disabled = False
             Window.bind(on_keyboard=self._action_keys)
-        self.iter += 1
+
+    def get_stats(self):
+        total_iters = self.iter - self.history
+        c_position = (1 - self.p_errors / total_iters) * 100
+        c_shape = (1 - self.s_errors / total_iters) * 100
+        all_errors = self.p_errors + self.s_errors
+        s_rate = 1 - (all_errors / (2 * total_iters))
+        s_rate *= 100
+        return "Samples count: %s\n"\
+               "Correct positions: %.2f%%\n"\
+               "Correct shapes: %.2f%%\n"\
+               "Overall success: %.2f%%" % (total_iters,
+                                          c_position,
+                                          c_shape,
+                                          s_rate)
 # eof
