@@ -84,7 +84,7 @@ class GameLayout(GridLayout):
     CLEAR_INTERVAL = 0.1
     EVALUATE_INTERVAL = 1
     DEFAULT_BUTTON_COLOR = (0.8, 0.8, 0.8, 1)
-    BTN_SIZE_HINT = (0.5, 0.5)
+    BTN_SIZE_HINT = (0.3, 0.3)
 
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
