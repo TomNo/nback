@@ -203,6 +203,11 @@ class GameLayout(GridLayout):
                             on_release=self.shape_callback)
 
         self.add_widget(self.n_btn)
+
+        level_info = Label(text="[color=000000]%s-back[/color]" % self.history,
+                           font_size="25sp", markup=True,
+                           size_hint=self.INFO_LABEL_SIZE_HINT)
+        self.add_widget(level_info)
         # disable buttons at the start
         self.p_btn.disabled = True
         self.n_btn.disabled = True
