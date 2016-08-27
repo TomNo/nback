@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import unittest
+from ansible.compat.tests import mock
+
 from kivy.core.window import Window
 
 __author__ = 'Tomas Novacik'
@@ -15,6 +18,75 @@ from kivy.uix.popup import Popup
 
 
 from basic_screen import BasicScreen
+
+# TODO too much code duplication
+# reformat using test generating approach
+class TestGameEvaluation(unittest.TestCase):
+
+    PREV_POSITION = 1
+    PREV_SHAPE = 2
+    GUI_DT = 10
+
+    def setUp(self):
+        self.game = GameLayout()
+        self.game._set_config_vals = mock.MagicMock()
+        self.game.build()
+        self.game.pos_list = [self.PREV_POSITION]
+        self.game.num_list = [self.PREV_SHAPE]
+        self.game.a_num = self.PREV_SHAPE
+        self.game.a_pos = self.PREV_POSITION
+
+    def _game_eval(self):
+        # eval must be called with some delta time
+        self.game._evaluate(self.GUI_DT)
+
+    def test_mistake_shape_clicked(self):
+        self.game.a_num = self.PREV_SHAPE + 1
+        self.game.n_clicked = True
+        self._game_eval()
+        self.assertTrue(self.game.n_err)
+
+    def test_mistake_shape_not_clicked(self):
+        self.game.a_num = self.PREV_SHAPE
+        self.game.n_clicked = False
+        self._game_eval()
+        self.assertTrue(self.game.n_err)
+
+    def test_mistake_position_clicked(self):
+        self.game.a_pos = self.PREV_POSITION + 1
+        self.game.p_clicked = True
+        self._game_eval()
+        self.assertTrue(self.game.p_err)
+
+    def test_mistake_position_not_clicked(self):
+        self.game.a_pos = self.PREV_POSITION
+        self.game.p_clicked = False
+        self._game_eval()
+        self.assertTrue(self.game.p_err)
+
+    def test_success_position_clicked(self):
+        self.game.a_pos = self.PREV_POSITION
+        self.game.p_clicked = True
+        self._game_eval()
+        self.assertFalse(self.game.p_err)
+
+    def test_success_position_not_clicked(self):
+        self.game.a_pos = self.PREV_POSITION + 1
+        self.game.p_clicked = False
+        self._game_eval()
+        self.assertFalse(self.game.p_err)
+
+    def test_success_shape_clicked(self):
+        self.game.a_num = self.PREV_SHAPE
+        self.game.n_clicked = True
+        self._game_eval()
+        self.assertFalse(self.game.n_err)
+
+    def test_success_shape_not_clicked(self):
+        self.game.a_num = self.PREV_SHAPE + 1
+        self.game.n_clicked = False
+        self._game_eval()
+        self.assertFalse(self.game.n_err)
 
 
 class Statistics(object):
@@ -155,15 +227,15 @@ class GameLayout(GridLayout):
 
     def _evaluate(self, dt):
         # using xor
-        p_err = self.pos_list[0] == self.a_pos ^ self.p_clicked
-        n_err = self.num_list[0] == self.a_num ^ self.n_clicked
-        self.stats.add_result(p_err, n_err)
+        self.p_err = (self.pos_list[0] == self.a_pos) != self.p_clicked
+        self.n_err = (self.num_list[0] == self.a_num) != self.n_clicked
+        self.stats.add_result(self.p_err, self.n_err)
 
         # change buttons background color depending on success/fail
         if self.pos_list[0] == self.a_pos or self.p_clicked:
-            self.p_btn.background_color = RED if p_err else GREEN
+            self.p_btn.background_color = RED if self.p_err else GREEN
         if self.num_list[0] == self.a_num or self.n_clicked:
-            self.n_btn.background_color = RED if n_err else GREEN
+            self.n_btn.background_color = RED if self.n_err else GREEN
 
 
     def display_statistics(self):
