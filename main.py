@@ -5,7 +5,6 @@ import os
 from kivy import Config
 from kivy.properties import ObjectProperty
 from kivy.uix.anchorlayout import AnchorLayout
-from kivy.uix.gridlayout import GridLayout
 
 Config.set('kivy', 'exit_on_escape', '0')
 Config.write()
@@ -28,7 +27,7 @@ BACK_KEY_CODES = [27, 1001]
 class MenuScreen(Screen):
 
     MENU_SPACING = 10
-    MENU_SIZE_HINT = (.1, .1)
+    MENU_SIZE_HINT = (.2, .2)
 
     def on_enter(self, *args):
         self.menu_layout = AnchorLayout()
@@ -43,10 +42,16 @@ class MenuScreen(Screen):
         def to_settings_screen(instance):
             self.manager.current = "settings"
 
+        def exit(instance):
+            App.get_running_app().stop()
+
         start_btn = Button(text="Start game", on_press=to_game_screen)
         settings_btn = Button(text="Settings", on_press=to_settings_screen)
+        exit_btn = Button(text="Exit", on_press=exit)
         box_layout.add_widget(start_btn)
         box_layout.add_widget(settings_btn)
+        box_layout.add_widget(exit_btn)
+
         self.menu_layout.add_widget(box_layout)
         self.add_widget(self.menu_layout)
 
@@ -105,5 +110,8 @@ class NBackApp(App):
             raise IOError("Cannot locate configuration file.")
         self.config.read(self.SETTINGS_FILENAME)
 
+
 if __name__ == '__main__':
     NBackApp().run()
+
+#eof
