@@ -1,6 +1,7 @@
 # kivy configuration should precede
 # any 'kivy' related import
 from kivy import Config
+from kivy.uix.label import Label
 
 import about
 
@@ -31,8 +32,15 @@ class MenuScreen(Screen):
 
     MENU_SPACING = 10
     MENU_SIZE_HINT = (.3, .3)
+    APP_HEADING = "Dual N-back exercise"
+    HEADING_SIZE_HINT = (.3, .3)
 
     def on_enter(self, *args):
+        self.heading_layout = AnchorLayout(anchor_x='center', anchor_y='top')
+        heading = Label(text=self.APP_HEADING, font_size='55sp',
+                        size_hint=self.HEADING_SIZE_HINT)
+        self.heading_layout.add_widget(heading)
+        self.add_widget(self.heading_layout)
         self.menu_layout = AnchorLayout()
 
         box_layout = BoxLayout(spacing=self.MENU_SPACING,
@@ -64,6 +72,8 @@ class MenuScreen(Screen):
 
     def on_leave(self, *args):
         self.remove_widget(self.menu_layout)
+        self.remove_widget(self.heading_layout)
+        del self.heading_layout
         del self.menu_layout
 
 
