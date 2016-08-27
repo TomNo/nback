@@ -6,11 +6,13 @@ __author__ = 'Tomas Novacik'
 from random import randint
 
 from kivy.clock import Clock
+from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+
 
 from basic_screen import BasicScreen
 
@@ -43,6 +45,18 @@ class Statistics(object):
 
 class GameScreen(BasicScreen):
 
+    def __init__(self, *args, **kwargs):
+        super(GameScreen, self).__init__(*args, **kwargs)
+        with self.canvas.before:
+            Color(0.6, 0.65, 0.65)
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+
+        self.bind(size=self._update_rect, pos=self._update_rect)
+
+    def _update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+
     def on_enter(self, *args):
         self.game = GameLayout()
         self.add_widget(self.game)
@@ -69,7 +83,8 @@ class GameLayout(GridLayout):
     SHAPE_MATCH_KEYBIND = ord('f')
     CLEAR_INTERVAL = 0.1
     EVALUATE_INTERVAL = 1
-    DEFAULT_BUTTON_COLOR = (1, 1, 1, 1)
+    DEFAULT_BUTTON_COLOR = (0.8, 0.8, 0.8, 1)
+    BTN_SIZE_HINT = (0.5, 0.5)
 
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
@@ -90,7 +105,7 @@ class GameLayout(GridLayout):
         self._set_config_vals()
         self.cols = 3
         self.rows = 4
-        self.spacing = 10
+        self.spacing = 5
         self.p_clicked = False
         self.n_clicked = False
         self.stats = Statistics()
@@ -101,9 +116,12 @@ class GameLayout(GridLayout):
             self.cells.append(label)
             self.add_widget(label)
 
-        self.p_btn = Button(text="A: Position match", on_release=self.pos_callback)
+        self.p_btn = Button(text="A: Position match",
+                            size_hint=self.BTN_SIZE_HINT,
+                            on_release=self.pos_callback)
         self.add_widget(self.p_btn)
-        self.n_btn = Button(text="F: Shape match", on_release=self.num_callback)
+        self.n_btn = Button(text="F: Shape match", size_hint=self.BTN_SIZE_HINT,
+                            on_release=self.num_callback)
 
         self.add_widget(self.n_btn)
         # disable buttons at the start
@@ -112,11 +130,9 @@ class GameLayout(GridLayout):
 
     def pos_callback(self, instance):
         self.p_clicked = True
-        instance.disabled = True
 
     def num_callback(self, instance):
         self.n_clicked = True
-        instance.disabled = True
 
     def rand_num(self):
         return randint(0, 8)
