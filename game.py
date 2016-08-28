@@ -147,7 +147,7 @@ class GameLayout(GridLayout):
 
     def _set_config_vals(self):
         self.history = int(self._get_config("level"))
-        self.max_iter = int(self._get_config("max_iter"))
+        self.max_iter = int(self._get_config("max_iter")) + self.history
         self.step_duration = float(self._get_config("step_duration"))
 
     def _action_keys(self, window, key, *args):
