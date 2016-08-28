@@ -218,11 +218,15 @@ class GameLayout(GridLayout):
     def shape_callback(self, instance):
         self.n_clicked = True
 
+    def _rand(self, default_choice, choice_history):
+        """Make items from the past more likely to be selected."""
+        return random.choice(default_choice + choice_history + choice_history)
+
     def rand_shape(self):
-        return random.choice(self.SHAPES + self.shapes)
+        return self._rand(self.SHAPES, self.shapes)
 
     def rand_position(self):
-        return random.choice(self.POSITIONS + self.positions)
+        return self._rand(self.POSITIONS, self.positions)
 
     def new_cell(self):
         self.a_shape, self.a_position = self.rand_shape(), self.rand_position()
