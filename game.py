@@ -344,6 +344,15 @@ class GameLayout(GridLayout):
             s_rate = 1 - (all_errors / tested_items)
             s_rate *= 100
 
+        if c_position < 0:
+            c_position = 0
+
+        if c_shape < 0:
+            c_shape = 0
+
+        if s_rate < 0:
+            s_rate = 0
+
         return "Samples count: %s\n"\
                "Correct positions: %.2f%%\n"\
                "Correct shapes: %.2f%%\n"\
