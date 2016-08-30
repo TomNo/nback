@@ -239,6 +239,8 @@ class GameLayout(GridLayout):
         self.iter = 0
         self.s_errors = 0
         self.p_errors = 0
+        self.tested_positions = 0.0
+        self.tested_shapes = 0.0
 
         self.p_clicked = False
         self.n_clicked = False
@@ -258,6 +260,9 @@ class GameLayout(GridLayout):
         self.p_errors += self.p_err
         self.s_errors += self.n_err
 
+        self.tested_positions += self.positions[0] == self.a_position
+        self.tested_shapes += self.shapes[0] == self.a_shape
+
         # change buttons background color depending on success/fail
         if self.positions[0] == self.a_position or self.p_clicked:
             self.p_btn.background_color = RED if self.p_err else GREEN
@@ -267,7 +272,7 @@ class GameLayout(GridLayout):
 
     def display_statistics(self):
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text=self.get_stats(), font_size='20sp'))
+        layout.add_widget(Label(text=self.get_statistics(), font_size='20sp'))
         def to_menu(instance):
             popup.dismiss()
             self.parent.manager.move_to_previous_screen()
@@ -320,17 +325,29 @@ class GameLayout(GridLayout):
             self.n_btn.disabled = False
             Window.bind(on_keyboard=self._action_keys)
 
-    def get_stats(self):
-        total_iters = float(self.iter - self.history)
-        c_position = (1 - self.p_errors / total_iters) * 100
-        c_shape = (1 - self.s_errors / total_iters) * 100
-        all_errors = self.p_errors + self.s_errors
-        s_rate = 1 - (all_errors / (2 * total_iters))
-        s_rate *= 100
+    def get_statistics(self):
+        if not self.tested_positions:
+            c_position = 100.0
+        else:
+            c_position = (1 - self.p_errors / self.tested_positions) * 100
+
+        if not self.tested_shapes:
+            c_shape = 100.0
+        else:
+            c_shape = (1 - self.s_errors / self.tested_shapes) * 100
+
+        tested_items = self.tested_positions + self.tested_shapes
+        if not tested_items:
+            s_rate = 100.0
+        else:
+            all_errors = self.p_errors + self.s_errors
+            s_rate = 1 - (all_errors / tested_items)
+            s_rate *= 100
+
         return "Samples count: %s\n"\
                "Correct positions: %.2f%%\n"\
                "Correct shapes: %.2f%%\n"\
-               "Overall success: %.2f%%" % (total_iters,
+               "Overall success: %.2f%%" % (self.iter - self.history,
                                           c_position,
                                           c_shape,
                                           s_rate)
