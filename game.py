@@ -111,7 +111,7 @@ class GameScreen(BasicScreen):
         self.game.start()
 
     def on_leave(self, *args):
-        Clock.unschedule(self.game.step)
+        Clock.unschedule(self.game._step)
         self.remove_widget(self.game)
         self.game = None
 
@@ -249,7 +249,7 @@ class GameLayout(GridLayout):
         self.shapes = []
 
         self.new_cell()
-        Clock.schedule_interval(self.step, self.step_duration)
+        Clock.schedule_interval(self._step, self.step_duration)
         self._schedule_cell_clearing()
 
     def _evaluate(self, dt):
@@ -293,14 +293,14 @@ class GameLayout(GridLayout):
         Clock.schedule_once(self._clear_cell,
                             self.step_duration - self.CLEAR_INTERVAL)
 
-    def step(self, dt):
+    def _step(self, dt):
         self.iter += 1
 
         if self.iter >= self.history and self.iter < self.max_iter:
             Clock.schedule_once(self._evaluate, dt - self.EVALUATE_INTERVAL)
 
         if self.iter >= self.max_iter:
-            Clock.unschedule(self.step)
+            Clock.unschedule(self._step)
             Window.unbind(on_keyboard=self._action_keys)
             self.p_btn.disabled = True
             self.n_btn.disabled = True
