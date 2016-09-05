@@ -301,7 +301,7 @@ class GameLayout(GridLayout):
         self.n_btn.disabled = True
         position, shape, success = self._compute_statistics()
         App.get_running_app().add_result(self.history, position, shape,
-                                         success, self.tested_positions)
+                                         success, self.iter)
         self._display_statistics(position, shape, success)
 
     def _compute_statistics(self):

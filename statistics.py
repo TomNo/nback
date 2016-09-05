@@ -38,7 +38,7 @@ class TestStatistic(unittest.TestCase):
         actual_item = self.stats.get(self.TEST_ITEM[0])
         self.assertEquals(self.TEST_ITEM[1:-1], list(actual_item[0]))
 
-    def test_session_played(self):
+    def test_sessions_played(self):
         """Test that session played correctly work as expected"""
         played_sessions = 10
         test_item = [3, 0.8, 0.9, 0.7, 20]
@@ -52,7 +52,7 @@ class TestStatistic(unittest.TestCase):
             dummy_date = datetime.datetime(dummy_year, 1, 1)
             self.stats.add(*test_item, date=dummy_date)
             dummy_year += 1
-        self.assertEqual(self.stats.session_played(), played_sessions)
+        self.assertEqual(self.stats.sessions_played(), played_sessions)
 
     def test_item_tested(self):
         total_items = 0
@@ -67,7 +67,7 @@ class TestStatistic(unittest.TestCase):
             dummy_date = datetime.datetime(dummy_year, 1, 1)
             self.stats.add(*self.TEST_ITEM, date=dummy_date)
             dummy_year += 1
-        self.assertEqual(self.stats.items_tested(), total_items)
+        self.assertEqual(self.stats.tested_items(), total_items)
 
 class Statistics(object):
     """Store overall statistics """
@@ -126,7 +126,7 @@ class Statistics(object):
         cur = self.connection.execute(q, (level,))
         return cur.fetchall()
 
-    def session_played(self, date=None):
+    def sessions_played(self, date=None):
         """Returns how many sessions have been played on given day"""
         if date is None:
             date = datetime.date.today().isoformat()
@@ -136,14 +136,15 @@ class Statistics(object):
         cur = self.connection.execute(q, (date, date))
         return cur.fetchone()[0]
 
-    def items_tested(self, date=None):
+    def tested_items(self, date=None):
         """Returns how many items were tested on given day"""
         if date is None:
             date = datetime.date.today().isoformat()
         q = "select SUM(%s) from %s" \
             " where date >= date(?) AND date <  date(?, '+1 day')"
         q %= (self.COUNT_COL, self.TABLE_NAME)
-        cur = self.connection.execute(q, (date, date))
-        return cur.fetchone()[0]
+        cur = self.connection.execute(q, (date, date)).fetchone()[0]
+        result = 0 if cur is None else cur
+        return result
 
 # eof
