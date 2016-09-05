@@ -1,15 +1,14 @@
 #!/usr/bin/env python
+
+__author__ = 'Tomas Novacik'
+
+import mock
+import random
 import unittest
 
 from kivy.core.window import Window
 from kivy.properties import NumericProperty
 from kivy.uix.anchorlayout import AnchorLayout
-
-__author__ = 'Tomas Novacik'
-
-import random
-import mock
-
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
@@ -270,7 +269,7 @@ class GameLayout(GridLayout):
             self.n_btn.background_color = RED if self.n_err else GREEN
 
 
-    def display_statistics(self):
+    def _display_statistics(self):
         layout = BoxLayout(orientation="vertical")
         layout.add_widget(Label(text=self.get_statistics(), font_size='20sp'))
         def to_menu(instance):
@@ -292,6 +291,17 @@ class GameLayout(GridLayout):
     def _schedule_cell_clearing(self):
         Clock.schedule_once(self._clear_cell,
                             self.step_duration - self.CLEAR_INTERVAL)
+    def _on_finish(self):
+        Clock.unschedule(self._step)
+        Window.unbind(on_keyboard=self._action_keys)
+        self.p_btn.disabled = True
+        self.n_btn.disabled = True
+        self._store_statistics()
+        self._display_statistics()
+
+    def _store_statistics(self):
+        """Store statistics to db """
+        pass
 
     def _step(self, dt):
         self.iter += 1
@@ -300,11 +310,7 @@ class GameLayout(GridLayout):
             Clock.schedule_once(self._evaluate, dt - self.EVALUATE_INTERVAL)
 
         if self.iter >= self.max_iter:
-            Clock.unschedule(self._step)
-            Window.unbind(on_keyboard=self._action_keys)
-            self.p_btn.disabled = True
-            self.n_btn.disabled = True
-            self.display_statistics()
+            self._on_finish()
             return
         else:
             self._schedule_cell_clearing()
