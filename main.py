@@ -4,6 +4,7 @@ from kivy import Config
 from kivy.uix.label import Label
 
 import about
+from statistics import Statistics
 
 Config.set('kivy', 'exit_on_escape', '0')
 Config.write()
@@ -106,6 +107,8 @@ class NBackApp(App):
 
     def build(self):
         self._load_settings()
+        # TODO string should be accessed as constant
+        self.stats = Statistics(self.config.get('internal', 'db_path'))
         self.sm = ScreenHistoryManager()
         self.sm.add_widget(MenuScreen(name='menu'))
         self.sm.add_widget(game.GameScreen(name='game'))
