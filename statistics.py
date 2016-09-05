@@ -31,10 +31,10 @@ class TestStatistic(unittest.TestCase):
 
     def test_db_operation(self):
         """Inserted items into db should be equal to gathered items"""
-        test_item = [3, 0.8, 0.9, 0.7]
+        test_item = [3, 0.8, 0.9, 0.7, 20]
         self.stats.add(*test_item)
         actual_item = self.stats.get(test_item[0])
-        self.assertEquals(test_item[1:], list(actual_item[0]))
+        self.assertEquals(test_item[1:-1], list(actual_item[0]))
 
 
 class Statistics(object):
@@ -48,7 +48,9 @@ class Statistics(object):
     SUCCESS_COL = "success"
     LEVEL_COL = "level"
     DATE_COL = "date"
-    TABLE_COLS = [POSITION_COL, SHAPE_COL, SUCCESS_COL, LEVEL_COL, DATE_COL]
+    COUNT_COL = "count"
+    TABLE_COLS = [POSITION_COL, SHAPE_COL, SUCCESS_COL, LEVEL_COL, DATE_COL,
+                  COUNT_COL]
 
     def __init__(self, db_name = DB_NAME):
         self.db_name = db_name
@@ -66,21 +68,21 @@ class Statistics(object):
     def _create_statistics_table(self):
         """Create statistics table that contains current timestamp as id,
         nback level, position success rate, shape success rate,
-        overall success rate"""
+        overall success rate and items displayed during session"""
         q = "CREATE TABLE %s (%s date PRIMARY KEY default current_timestamp,"\
-            "%s integer, %s real, %s real, %s real)"
-        q %= (self.TABLE_NAME, self.DATE_COL, self.LEVEL_COL, self.POSITION_COL,
-              self.SHAPE_COL, self.SUCCESS_COL)
+            "%s integer, %s real, %s real, %s real, %s integer)"
+        q %= tuple([self.TABLE_NAME] + self.TABLE_COLS)
         self.connection.execute(q)
         self.connection.commit()
 
-    def add(self, level, position, shape, success):
+    def add(self, level, position, shape, success, item_count):
         """Add game results"""
-        q = "INSERT INTO %s (%s, %s, %s, %s)" \
-            " values (?, ?, ?, ?)"
+        q = "INSERT INTO %s (%s, %s, %s, %s, %s)" \
+            " values (?, ?, ?, ?, ?)"
         q %= (self.TABLE_NAME, self.LEVEL_COL, self.POSITION_COL,
-              self.SHAPE_COL, self.SUCCESS_COL)
-        self.connection.execute(q, (level, position, shape, success))
+              self.SHAPE_COL, self.SUCCESS_COL, self.COUNT_COL)
+        self.connection.execute(q, (level, position, shape, success,
+                                    item_count))
         self.connection.commit()
 
     def get(self, level):

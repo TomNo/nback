@@ -24,12 +24,15 @@ from kivy.config import ConfigParser
 import game
 import settings
 
+#TODO add content to about page
+#TODO move graphics definitions to separate kv files
+
 # codes that should be handled if user want to go
 # to previous screen
 BACK_KEY_CODES = [27, 1001]
 
 
-class MenuScreen(Screen):
+class MainScreen(Screen):
 
     MENU_SPACING = 10
     MENU_SIZE_HINT = (.3, .3)
@@ -110,7 +113,7 @@ class NBackApp(App):
         # TODO string should be accessed as constant
         self.stats = Statistics(self.config.get('internal', 'db_path'))
         self.sm = ScreenHistoryManager()
-        self.sm.add_widget(MenuScreen(name='menu'))
+        self.sm.add_widget(MainScreen(name='menu'))
         self.sm.add_widget(game.GameScreen(name='game'))
         self.sm.add_widget(settings.SettingScreen(name='settings'))
         self.sm.add_widget(about.AboutScreen(name='about'))
@@ -118,8 +121,8 @@ class NBackApp(App):
         # return game
         return self.sm
 
-    def add_result(self, level, position, shape, success):
-        self.stats.add(level, position, shape, success)
+    def add_result(self, level, position, shape, success, items_count):
+        self.stats.add(level, position, shape, success, items_count)
 
     def _hook_keyboard(self, window, key, *args):
         if key in BACK_KEY_CODES:
