@@ -1,0 +1,9 @@
+[
+  {
+    "type": "path",
+    "title": "Statistics database path",
+    "desc": "Set location for statistics database",
+    "section": "internal",
+    "key":"db_path"
+  }
+]

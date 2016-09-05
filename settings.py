@@ -8,6 +8,7 @@ __author__ = 'Tomas Novacik'
 
 class NBackSettings(Settings):
     GAME_SETTINGS_PANEL = "game_settings.json"
+    INTERNAL_SETTINGS_PANEL = "internal_settings.json"
 
     def __init__(self,*args, **kwargs):
         super(self.__class__, self).__init__(*args, **kwargs)
@@ -15,6 +16,8 @@ class NBackSettings(Settings):
     def create_panels(self, config):
         self.add_json_panel("Game settings", config,
                             self.GAME_SETTINGS_PANEL)
+        self.add_json_panel("Internal Settings", config,
+                            self.INTERNAL_SETTINGS_PANEL)
 
     def on_config_change(self, *args):
         self.parent.config.write()
