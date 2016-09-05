@@ -118,6 +118,9 @@ class NBackApp(App):
         # return game
         return self.sm
 
+    def add_result(self, level, position, shape, success):
+        self.stats.add(level, position, shape, success)
+
     def _hook_keyboard(self, window, key, *args):
         if key in BACK_KEY_CODES:
             try:

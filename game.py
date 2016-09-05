@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from kivy.app import App
 
 __author__ = 'Tomas Novacik'
 
@@ -20,6 +21,7 @@ from kivy.uix.popup import Popup
 from basic_screen import BasicScreen
 
 # TODO too much code duplication
+# TODO there should be separate class for statistics
 # reformat using test generating approach
 class TestGameEvaluation(unittest.TestCase):
 
@@ -269,9 +271,10 @@ class GameLayout(GridLayout):
             self.n_btn.background_color = RED if self.n_err else GREEN
 
 
-    def _display_statistics(self):
+    def _display_statistics(self, position, shape, success):
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text=self.get_statistics(), font_size='20sp'))
+        msg = self._format_statistics(position, shape, success)
+        layout.add_widget(Label(text=msg, font_size='20sp'))
         def to_menu(instance):
             popup.dismiss()
             self.parent.manager.move_to_previous_screen()
@@ -296,12 +299,39 @@ class GameLayout(GridLayout):
         Window.unbind(on_keyboard=self._action_keys)
         self.p_btn.disabled = True
         self.n_btn.disabled = True
-        self._store_statistics()
-        self._display_statistics()
+        position, shape, success = self._compute_statistics()
+        App.get_running_app().add_result(self.history, position, shape, success)
+        self._display_statistics(position, shape, success)
 
-    def _store_statistics(self):
-        """Store statistics to db """
-        pass
+    def _compute_statistics(self):
+        if not self.tested_positions:
+            c_position = 100.0
+        else:
+            c_position = (1 - self.p_errors / self.tested_positions) * 100
+
+        if not self.tested_shapes:
+            c_shape = 100.0
+        else:
+            c_shape = (1 - self.s_errors / self.tested_shapes) * 100
+
+        tested_items = self.tested_positions + self.tested_shapes
+        if not tested_items:
+            s_rate = 100.0
+        else:
+            all_errors = self.p_errors + self.s_errors
+            s_rate = 1 - (all_errors / tested_items)
+            s_rate *= 100
+
+        if c_position < 0:
+            c_position = 0
+
+        if c_shape < 0:
+            c_shape = 0
+
+        if s_rate < 0:
+            s_rate = 0
+
+        return c_position, c_shape, s_rate
 
     def _step(self, dt):
         self.iter += 1
@@ -331,34 +361,7 @@ class GameLayout(GridLayout):
             self.n_btn.disabled = False
             Window.bind(on_keyboard=self._action_keys)
 
-    def get_statistics(self):
-        if not self.tested_positions:
-            c_position = 100.0
-        else:
-            c_position = (1 - self.p_errors / self.tested_positions) * 100
-
-        if not self.tested_shapes:
-            c_shape = 100.0
-        else:
-            c_shape = (1 - self.s_errors / self.tested_shapes) * 100
-
-        tested_items = self.tested_positions + self.tested_shapes
-        if not tested_items:
-            s_rate = 100.0
-        else:
-            all_errors = self.p_errors + self.s_errors
-            s_rate = 1 - (all_errors / tested_items)
-            s_rate *= 100
-
-        if c_position < 0:
-            c_position = 0
-
-        if c_shape < 0:
-            c_shape = 0
-
-        if s_rate < 0:
-            s_rate = 0
-
+    def _format_statistics(self, c_position, c_shape, s_rate):
         return "Samples count: %s\n"\
                "Correct positions: %.2f%%\n"\
                "Correct shapes: %.2f%%\n"\
