@@ -11,22 +11,20 @@ Config.set('kivy', 'exit_on_escape', '0')
 Config.write()
 
 import os
-
 from kivy.properties import ObjectProperty
 from kivy.uix.anchorlayout import AnchorLayout
-
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import ScreenManager
 from kivy.config import ConfigParser
-
 import game
 import settings
 
-#TODO add content to about page
-#TODO move graphics definitions to separate kv files
+# TODO add content to about page
+# TODO move graphics definitions to separate kv files
+# TODO anchor + box layout combination is quite common -> one class
 
 # codes that should be handled if user want to go
 # to previous screen
@@ -34,7 +32,6 @@ BACK_KEY_CODES = [27, 1001]
 
 
 class MainScreen(BasicScreen):
-
     MENU_SPACING = 10
     MENU_SIZE_HINT = (.3, .3)
     APP_HEADING = "Dual %s-back exercise"
@@ -64,10 +61,6 @@ class MainScreen(BasicScreen):
         self.add_widget(self.heading_layout)
         self.menu_layout = AnchorLayout()
 
-        box_layout = BoxLayout(spacing=self.MENU_SPACING,
-                               size_hint = self.MENU_SIZE_HINT,
-                               orientation='vertical')
-
         def to_game_screen(instance):
             self.manager.current = "game"
 
@@ -80,31 +73,39 @@ class MainScreen(BasicScreen):
         def exit(instance):
             App.get_running_app().stop()
 
-        start_btn = Button(text="Start game", on_press=to_game_screen)
-        settings_btn = Button(text="Settings", on_press=to_settings_screen)
-        exit_btn = Button(text="Exit", on_press=exit)
-        about_btn = Button(text="About", on_press=to_about_screen)
-
-        session_played_label = Label(text=self._get_session_played())
-        items_tested_label = Label(text=self._get_tested_items())
-        success_rate_label = Label(text=self._get_overall_success())
-
-        box_info = BoxLayout(orientation="vertical",
-                             size_hint=self.INFO_SIZE_HINT)
-        box_info.add_widget(session_played_label)
-        box_info.add_widget(items_tested_label)
-        box_info.add_widget(success_rate_label)
-
+        # information box with statistics
         self.info_layout = AnchorLayout(anchor_x='center', anchor_y='bottom')
-        self.info_layout.add_widget(box_info)
 
-        box_layout.add_widget(start_btn)
-        box_layout.add_widget(settings_btn)
-        box_layout.add_widget(about_btn)
-        box_layout.add_widget(exit_btn)
+        info_box = BoxLayout(orientation="vertical",
+                             size_hint=self.INFO_SIZE_HINT)
+        info_labels = [
+            Label(text=self._get_session_played()),
+            Label(text=self._get_tested_items()),
+            Label(text=self._get_overall_success())
+        ]
+
+        for label in info_labels:
+            info_box.add_widget(label)
+
+        self.info_layout.add_widget(info_box)
+        self.add_widget(self.info_layout)
+
+        # menu with buttons to redirect to specific 'pages'
+        box_layout = BoxLayout(spacing=self.MENU_SPACING,
+                       size_hint=self.MENU_SIZE_HINT,
+                       orientation='vertical')
+        menu_btns = [
+            Button(text="Start game", on_press=to_game_screen),
+            Button(text="Settings", on_press=to_settings_screen),
+            Button(text="Exit", on_press=exit),
+            Button(text="About", on_press=to_about_screen)
+        ]
+
+        for btn in menu_btns:
+            box_layout.add_widget(btn)
+
         self.menu_layout.add_widget(box_layout)
         self.add_widget(self.menu_layout)
-        self.add_widget(self.info_layout)
 
     def on_leave(self, *args):
         to_be_removed = [self.heading_layout, self.menu_layout,
@@ -135,7 +136,6 @@ class ScreenHistoryManager(ScreenManager):
 
 
 class NBackApp(App):
-
     SETTINGS_FILENAME = "config.ini"
 
     config = ObjectProperty(None)
@@ -175,4 +175,4 @@ class NBackApp(App):
 if __name__ == '__main__':
     NBackApp().run()
 
-#eof
+# eof
