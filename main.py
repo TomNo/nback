@@ -50,8 +50,8 @@ class MainScreen(BasicScreen):
         return "Tested items today: %s" % tested_items
 
     def _get_overall_success(self):
-        success_rate = tested_items = App.get_running_app().stats.success_rate()
-        return "Today success rate: %s%%" % success_rate
+        success_rate = App.get_running_app().stats.success_rate()
+        return "Today success rate: %1.f%%" % success_rate
 
     def _format_heading(self):
         return self.APP_HEADING % self.config.get("game", "level")
@@ -87,10 +87,13 @@ class MainScreen(BasicScreen):
 
         session_played_label = Label(text=self._get_session_played())
         items_tested_label = Label(text=self._get_tested_items())
+        success_rate_label = Label(text=self._get_overall_success())
+
         box_info = BoxLayout(orientation="vertical",
                              size_hint=self.INFO_SIZE_HINT)
         box_info.add_widget(session_played_label)
         box_info.add_widget(items_tested_label)
+        box_info.add_widget(success_rate_label)
 
         self.info_layout = AnchorLayout(anchor_x='center', anchor_y='bottom')
         self.info_layout.add_widget(box_info)

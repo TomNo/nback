@@ -13,7 +13,12 @@ class TestStatistic(unittest.TestCase):
     TEST_DB_NAME = "test_statistics.sqlite3"
     NAME_COL = 1
     ITEM_COUNT_COL = 4
+    SUCCESS_RATE_COL = 3
     TEST_ITEM = [3, 0.8, 0.9, 0.7, 20]
+    DUMMY_YEAR = 1990
+    DUMMY_DAY = 1
+    DUMMY_MONTH = 1
+    DUMMY_DATE = datetime.datetime(DUMMY_YEAR, DUMMY_MONTH, DUMMY_DAY)
 
     def setUp(self):
         self.stats = Statistics(self.TEST_DB_NAME)
@@ -68,6 +73,34 @@ class TestStatistic(unittest.TestCase):
             self.stats.add(*self.TEST_ITEM, date=dummy_date)
             dummy_year += 1
         self.assertEqual(self.stats.tested_items(), total_items)
+
+    def test_success_rate(self):
+        # no items
+        self.assertEqual(self.stats.success_rate(), 0)
+
+        rows = [
+            [3, 0.8, 0.9, 0.7, 20],
+            [3, 0.8, 0.9, 0.8, 21],
+            [3, 0.8, 0.9, 0.6, 19],
+            [3, 0.8, 0.9, 0.5, 31]
+        ]
+        # rows that should be part of computation
+        for row in rows:
+            self.stats.add(*row)
+
+        # row that should be excluded from computation
+        self.stats.add(*rows[0], date=self.DUMMY_DATE)
+
+        expected_success_rate = 0.0
+        items_count = 0.0
+        for row in rows:
+            expected_success_rate += row[self.SUCCESS_RATE_COL] *\
+                                     row[self.ITEM_COUNT_COL]
+            items_count += row[self.ITEM_COUNT_COL]
+
+        expected_success_rate /= items_count
+        self.assertEqual(self.stats.success_rate(), expected_success_rate)
+
 
 class Statistics(object):
     """Store overall statistics """
@@ -147,4 +180,19 @@ class Statistics(object):
         result = 0 if cur is None else cur
         return result
 
+    def success_rate(self, date=None):
+        if date is None:
+            date = datetime.date.today().isoformat()
+        q = "select %s, %s from %s" \
+            " where date >= date(?) AND date <  date(?, '+1 day')"
+        q %= (self.COUNT_COL, self.SUCCESS_COL, self.TABLE_NAME)
+        rows = self.connection.execute(q, (date, date)).fetchall()
+        success = 0.0
+        item_count = 0.0
+        if rows:
+            for row in rows:
+                success += row[0] * row[1]
+                item_count += row[0]
+            success /= item_count
+        return success
 # eof
