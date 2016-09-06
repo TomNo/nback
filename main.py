@@ -4,6 +4,7 @@ from kivy import Config
 from kivy.uix.label import Label
 
 import about
+from basic_screen import BasicScreen
 from statistics import Statistics
 
 Config.set('kivy', 'exit_on_escape', '0')
@@ -32,25 +33,32 @@ import settings
 BACK_KEY_CODES = [27, 1001]
 
 
-class MainScreen(Screen):
+class MainScreen(BasicScreen):
 
     MENU_SPACING = 10
     MENU_SIZE_HINT = (.3, .3)
-    APP_HEADING = "Dual N-back exercise"
+    APP_HEADING = "Dual %s-back exercise"
     HEADING_SIZE_HINT = (.3, .3)
     INFO_SIZE_HINT = (.3, .1)
 
     def _get_session_played(self):
         sessions_played = App.get_running_app().stats.sessions_played()
-        return "Session played today: %s" % sessions_played
+        return "Sessions played today: %s" % sessions_played
 
     def _get_tested_items(self):
         tested_items = App.get_running_app().stats.tested_items()
         return "Tested items today: %s" % tested_items
 
+    def _get_overall_success(self):
+        success_rate = tested_items = App.get_running_app().stats.success_rate()
+        return "Today success rate: %s%%" % success_rate
+
+    def _format_heading(self):
+        return self.APP_HEADING % self.config.get("game", "level")
+
     def on_enter(self, *args):
         self.heading_layout = AnchorLayout(anchor_x='center', anchor_y='top')
-        heading = Label(text=self.APP_HEADING, font_size='55sp',
+        heading = Label(text=self._format_heading(), font_size='55sp',
                         size_hint=self.HEADING_SIZE_HINT)
         self.heading_layout.add_widget(heading)
         self.add_widget(self.heading_layout)
@@ -132,7 +140,9 @@ class NBackApp(App):
     def build(self):
         self._load_settings()
         # TODO string should be accessed as constant
-        self.stats = Statistics(self.config.get('internal', 'db_path'))
+        db_dir = self.config.get('internal', 'db_path')
+        db_location = os.path.join(db_dir, Statistics.DB_NAME)
+        self.stats = Statistics(db_location)
         self.sm = ScreenHistoryManager()
         self.sm.add_widget(MainScreen(name='menu'))
         self.sm.add_widget(game.GameScreen(name='game'))
