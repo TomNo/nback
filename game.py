@@ -192,7 +192,7 @@ class GameLayout(GridLayout):
 
         self.cells = []
         for _ in xrange(self.GRID_SIZE):
-            label = CellLabel()
+            label = CellLabel(font_size="3cm")
             self.cells.append(label)
             self.add_widget(label)
 
