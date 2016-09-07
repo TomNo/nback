@@ -113,7 +113,7 @@ class GameScreen(BasicScreen):
 
     def on_leave(self, *args):
         Clock.unschedule(self.game._step)
-        self.remove_widget(self.game)
+        self.clear_widgets()
         self.game = None
 
 

@@ -108,10 +108,7 @@ class MainScreen(BasicScreen):
         self.add_widget(self.menu_layout)
 
     def on_leave(self, *args):
-        to_be_removed = [self.heading_layout, self.menu_layout,
-                         self.info_layout]
-        for i in to_be_removed:
-            self.remove_widget(i)
+        self.clear_widgets()
 
 
 class ScreenHistoryManager(ScreenManager):

@@ -34,7 +34,7 @@ class SettingScreen(BasicScreen):
         self.add_widget(self.settings)
 
     def on_leave(self, *args):
-        self.remove_widget(self.settings)
+        self.clear_widgets()
         del self.settings
 
 # eof
