@@ -4,6 +4,7 @@ from mock import MagicMock
 __author__ = 'Tomas Novacik'
 
 import datetime
+import inspect
 import unittest
 import sqlite3 as lite
 
@@ -102,6 +103,24 @@ class TestStatistic(unittest.TestCase):
         self.assertEqual(self.stats.success_rate(), expected_success_rate)
 
 
+DATE_ARG = "date"
+
+def date_select(fn):
+    def wrapper(*args, **kwargs):
+        # check that date arg is present
+        arg_names = inspect.getargspec(fn)[0]
+        try:
+            date_position = arg_names.index(DATE_ARG)
+        except ValueError:
+            raise ValueError("This function cannot be decorated as it does not"
+                             " have date arg in its definition.")
+
+        if DATE_ARG not in kwargs and len(args) <= date_position:
+            kwargs[DATE_ARG] = datetime.datetime.now()
+        return fn(*args, **kwargs)
+    return wrapper
+
+
 class Statistics(object):
     """Store overall statistics """
 
@@ -140,10 +159,9 @@ class Statistics(object):
         self.connection.execute(q)
         self.connection.commit()
 
+    @date_select
     def add(self, level, position, shape, success, item_count, date=None):
         """Add game results"""
-        if date is None:
-            date = datetime.datetime.now()
         q = "INSERT INTO %s (%s, %s, %s, %s, %s, %s)" \
             " values (?, ?, ?, ?, ?, ?)"
         q %= tuple([self.TABLE_NAME] + self.TABLE_COLS)
@@ -159,20 +177,18 @@ class Statistics(object):
         cur = self.connection.execute(q, (level,))
         return cur.fetchall()
 
+    @date_select
     def sessions_played(self, date=None):
         """Returns how many sessions have been played on given day"""
-        if date is None:
-            date = datetime.date.today().isoformat()
         q = "select COUNT(*) from %s" \
             " where date >= date(?) AND date <  date(?, '+1 day')"
         q %= self.TABLE_NAME
         cur = self.connection.execute(q, (date, date))
         return cur.fetchone()[0]
 
+    @date_select
     def tested_items(self, date=None):
         """Returns how many items were tested on given day"""
-        if date is None:
-            date = datetime.date.today().isoformat()
         q = "select SUM(%s) from %s" \
             " where date >= date(?) AND date <  date(?, '+1 day')"
         q %= (self.COUNT_COL, self.TABLE_NAME)
@@ -180,9 +196,8 @@ class Statistics(object):
         result = 0 if cur is None else cur
         return result
 
+    @date_select
     def success_rate(self, date=None):
-        if date is None:
-            date = datetime.date.today().isoformat()
         q = "select %s, %s from %s" \
             " where date >= date(?) AND date <  date(?, '+1 day')"
         q %= (self.COUNT_COL, self.SUCCESS_COL, self.TABLE_NAME)
