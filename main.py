@@ -97,8 +97,8 @@ class MainScreen(BasicScreen):
         menu_btns = [
             Button(text="Start game", on_press=to_game_screen),
             Button(text="Settings", on_press=to_settings_screen),
-            Button(text="Exit", on_press=exit),
-            Button(text="About", on_press=to_about_screen)
+            Button(text="About", on_press=to_about_screen),
+            Button(text="Exit", on_press=exit)
         ]
 
         for btn in menu_btns:

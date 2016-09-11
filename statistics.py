@@ -105,7 +105,9 @@ class TestStatistic(unittest.TestCase):
 
 DATE_ARG = "date"
 
-def date_select(fn):
+def set_date_if_not_set(fn):
+    """Automatically sets the date argument of a function/method
+    to current date if not set."""
     def wrapper(*args, **kwargs):
         # check that date arg is present
         arg_names = inspect.getargspec(fn)[0]
@@ -159,7 +161,7 @@ class Statistics(object):
         self.connection.execute(q)
         self.connection.commit()
 
-    @date_select
+    @set_date_if_not_set
     def add(self, level, position, shape, success, item_count, date=None):
         """Add game results"""
         q = "INSERT INTO %s (%s, %s, %s, %s, %s, %s)" \
@@ -177,7 +179,7 @@ class Statistics(object):
         cur = self.connection.execute(q, (level,))
         return cur.fetchall()
 
-    @date_select
+    @set_date_if_not_set
     def sessions_played(self, date=None):
         """Returns how many sessions have been played on given day"""
         q = "select COUNT(*) from %s" \
@@ -186,7 +188,7 @@ class Statistics(object):
         cur = self.connection.execute(q, (date, date))
         return cur.fetchone()[0]
 
-    @date_select
+    @set_date_if_not_set
     def tested_items(self, date=None):
         """Returns how many items were tested on given day"""
         q = "select SUM(%s) from %s" \
@@ -196,7 +198,7 @@ class Statistics(object):
         result = 0 if cur is None else cur
         return result
 
-    @date_select
+    @set_date_if_not_set
     def success_rate(self, date=None):
         q = "select %s, %s from %s" \
             " where date >= date(?) AND date <  date(?, '+1 day')"
