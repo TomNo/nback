@@ -93,10 +93,12 @@ class TestGameEvaluation(unittest.TestCase):
 
 class GameScreen(BasicScreen):
 
+    BACKGROUND_COLOR = [0.6, 0.65, 0.65]
+
     def __init__(self, *args, **kwargs):
         super(GameScreen, self).__init__(*args, **kwargs)
         with self.canvas.before:
-            Color(0.6, 0.65, 0.65)
+            Color(*self.BACKGROUND_COLOR)
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
         self.bind(size=self._update_rect, pos=self._update_rect)
