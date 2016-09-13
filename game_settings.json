@@ -16,8 +16,15 @@
   {
     "type": "numeric",
     "title": "Item duration",
-    "desc": "How long should be one cell visible in seconds",
+    "desc": "How long should be the delay between two items",
     "section": "game",
     "key":"step_duration"
+  },
+  {
+    "type": "numeric",
+    "title": "Item duration",
+    "desc": "How long should be item displayed",
+    "section": "game",
+    "key":"item_display"
   }
 ]

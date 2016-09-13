@@ -31,7 +31,7 @@ class TestGameEvaluation(unittest.TestCase):
 
     def setUp(self):
         self.game = GameLayout()
-        self.game._set_config_vals = mock.MagicMock()
+        self.game._get_config_vals = mock.MagicMock()
         self.game.build()
         self.game.positions = [self.PREV_POSITION]
         self.game.shapes = [self.PREV_SHAPE]
@@ -148,10 +148,11 @@ class GameLayout(GridLayout):
     def _get_config(self, opt_name):
         return self.parent.config.get(self.GAME_CONFIG_SECTION, opt_name)
 
-    def _set_config_vals(self):
+    def _get_config_vals(self):
         self.history = int(self._get_config("level"))
         self.max_iter = int(self._get_config("max_iter")) + self.history
         self.step_duration = float(self._get_config("step_duration"))
+        self.item_display = float(self._get_config("item_display"))
 
     def _action_keys(self, window, key, *args):
         # bind to 'position match' and 'shape match'
@@ -161,7 +162,7 @@ class GameLayout(GridLayout):
             self.n_btn.trigger_action()
 
     def build(self):
-        self._set_config_vals()
+        self._get_config_vals()
         self.cols = 3
         self.rows = 5
         self.spacing = 5
@@ -294,8 +295,8 @@ class GameLayout(GridLayout):
         self.actual_cell.text = ""
 
     def _schedule_cell_clearing(self):
-        Clock.schedule_once(self._clear_cell,
-                            self.step_duration - self.CLEAR_INTERVAL)
+        Clock.schedule_once(self._clear_cell, self.item_display)
+
     def _on_finish(self):
         Clock.unschedule(self._step)
         Window.unbind(on_keyboard=self._action_keys)
