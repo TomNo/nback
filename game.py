@@ -1,14 +1,20 @@
 #!/usr/bin/env python
+import numpy
+
 from kivy.app import App
+from kivy.graphics import (
+    Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale)
+from kivy.graphics.instructions import Callback
+from kivy.graphics.texture import Texture
 
 __author__ = 'Tomas Novacik'
 
 import mock
 import random
 import unittest
-
+from kivy.core.text import Label as CoreLabel
 from kivy.core.window import Window
-from kivy.properties import NumericProperty
+from kivy.properties import NumericProperty, ObjectProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
@@ -17,6 +23,7 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.uix.widget import Widget
 
 from basic_screen import BasicScreen
 
@@ -118,9 +125,104 @@ class GameScreen(BasicScreen):
         self.clear_widgets()
         self.game = None
 
+RGBA_SIZE = 4
+RGB_SIZE = 3
 
-class CellLabel(Label):
-    pass
+def rgba_to_rgb(vals):
+        """Converts values from rgba ubyte format to rgb in list format"""
+        if len(vals) % RGBA_SIZE != 0:
+            raise ValueError("Input array formatting is wrong.")
+        arr = numpy.fromstring(vals, dtype=numpy.uint8).tolist()
+        # remove every 4th element (alpha)
+        del arr[RGB_SIZE::RGBA_SIZE]
+        # create new numpy array
+        result = numpy.array(arr, dtype=numpy.uint8)
+        result.shape = [len(result)/RGB_SIZE, RGB_SIZE]
+        return result
+
+class TestRgbaToRgb(unittest.TestCase):
+
+    def test_empty(self):
+        pre = ''
+        self.assertEqual(rgba_to_rgb(pre).tostring(), pre)
+
+    def test_one(self):
+        pre = '\x00\xff\x00\xff'
+        self.assertEqual(rgba_to_rgb(pre).tostring(), pre[:-1])
+
+    def test_many(self):
+        PART_SIZE = 10
+        test_input = '\x00\xff\x00\xff' * PART_SIZE
+        test_input += '\xff\x00\xff\x0f' * PART_SIZE
+        expected_output = [[0, 255, 0]] * PART_SIZE
+        expected_output += [[255, 0, 255]] * PART_SIZE
+        self.assertEqual(rgba_to_rgb(test_input).tolist(), expected_output)
+
+    def test_improperly_formatted_input(self):
+        exception_raised = False
+        try:
+            rgba_to_rgb('\x00\xff\x00\xff\x00\xff\x00')
+        except ValueError:
+            exception_raised = True
+        self.assertTrue(exception_raised, "Exception was not raised.")
+
+
+class Cell(Label):
+
+    SHAPE_COLOR = [255, 255, 255]
+    BACKGROUND_COLOR = [0, 0, 0]
+    PADDING = 30
+    FONT_SIZE = '3cm'
+    NOISE_LEVEL = 0.95
+
+    def __init__(self, noise_level=NOISE_LEVEL):
+
+        super(Cell, self).__init__(font_size = self.FONT_SIZE)
+        self.shape_box = None
+        self.noise_level = noise_level
+
+    def reposition_shape_box(self, *largs):
+        self.shape_box.pos = self.pos
+
+    def resize_shape_box(self, *largs):
+        self.shape_box.size = self.size
+
+    def set_shape(self, shape):
+        self.text = shape
+
+        if self.noise_level:
+            self._label.refresh()
+            self.texture_buffer = numpy.fromstring(self._label.texture.pixels,
+                                               dtype=numpy.uint8)
+            alphas = self.texture_buffer[RGBA_SIZE - 1::RGBA_SIZE]
+            for index, item in enumerate(alphas):
+                if item != 0 and random.random() < self.NOISE_LEVEL:
+                    self.texture_buffer[(index + 1) * RGBA_SIZE - 1] = 0
+
+            self._label.texture.blit_buffer(self.texture_buffer,
+                                            colorfmt='rgba',
+                                            bufferfmt='ubyte')
+            if not self.shape_box:
+                with self.canvas:
+                    self.shape_box = Rectangle(size=self.size, pos=self.pos,
+                                               texture=self._label.texture)
+            center_x = self.center_x - self._label.texture.size[0] / 2
+            center_y = self.center_y - self._label.texture.size[1] / 2
+            self.shape_box.pos = (center_x, center_y)
+            self.shape_box.size = self._label.texture.size
+            self.shape_box.texture = self._label.texture
+            self.text = ""
+            self.bind(pos=self.reposition_shape_box, size=self.resize_shape_box)
+
+    def clear(self):
+        if self.noise_level:
+            self.texture_buffer.fill(0)
+            self._label.texture.blit_buffer(self.texture_buffer, colorfmt='rgba',
+                                            bufferfmt='ubyte')
+            self.shape_box.texture = self._label.texture
+        else:
+            self.text = ""
+
 
 GREEN = (0,1,0,1)
 RED = (1,0,0,1)
@@ -140,6 +242,7 @@ class GameLayout(GridLayout):
     STATS_POPUP_SIZE_HINT = (.35, .35)
     INFO_LABEL_SIZE_HINT = (.1, .1)
     GRID_SIZE = 9
+    MIN_TIME = 0
 
     iter = NumericProperty(None)
     p_errors = NumericProperty(None)
@@ -153,6 +256,7 @@ class GameLayout(GridLayout):
         self.max_iter = int(self._get_config("max_iter")) + self.history
         self.step_duration = float(self._get_config("step_duration"))
         self.item_display = float(self._get_config("item_display"))
+        self.noise_level = float(self._get_config("noise_level"))
 
     def _action_keys(self, window, key, *args):
         # bind to 'position match' and 'shape match'
@@ -195,7 +299,7 @@ class GameLayout(GridLayout):
 
         self.cells = []
         for _ in xrange(self.GRID_SIZE):
-            label = CellLabel(font_size="3cm")
+            label = Cell(self.noise_level)
             self.cells.append(label)
             self.add_widget(label)
 
@@ -232,10 +336,18 @@ class GameLayout(GridLayout):
     def rand_position(self):
         return self._rand(self.POSITIONS, self.positions)
 
-    def new_cell(self):
+    def new_cell(self, dt=None):
         self.a_shape, self.a_position = self.rand_shape(), self.rand_position()
         self.actual_cell = self.cells[self.a_position]
-        self.actual_cell.text = str(self.a_shape)
+        self.actual_cell.set_shape(str(self.a_shape))
+        # from collections import Counter
+        # print([ord(i) for i in self.actual_cell._label.texture.pixels])
+        # print(Counter([str(i) for i in self.actual_cell._label.texture.pixels]))
+        # Clock.schedule_once(self.actual_cell.apply_noise, self.MIN_TIME)
+        # self.actual_cell._label.refresh()
+        # print(dir(self.actual_cell.canvas))
+        # from collections import Counter
+        # print(Counter([str(i) for i in self.actual_cell.pixels]))
         self.p_clicked = False
         self.n_clicked = False
 
@@ -252,7 +364,7 @@ class GameLayout(GridLayout):
         self.positions = []
         self.shapes = []
 
-        self.new_cell()
+        Clock.schedule_once(self.new_cell, self.MIN_TIME)
         Clock.schedule_interval(self._step, self.step_duration)
         self._schedule_cell_clearing()
 
@@ -292,7 +404,7 @@ class GameLayout(GridLayout):
         popup.open()
 
     def _clear_cell(self, dt):
-        self.actual_cell.text = ""
+        self.actual_cell.clear()
 
     def _schedule_cell_clearing(self):
         Clock.schedule_once(self._clear_cell, self.item_display)
@@ -356,6 +468,7 @@ class GameLayout(GridLayout):
         self.positions.append(self.a_position)
         self.shapes.append(self.a_shape)
         self.new_cell()
+        # Clock.schedule_once(self.actual_cell.apply_noise, self.MIN_TIME)
 
         # enable buttons if it make sense to click
         if self.iter >= self.history:

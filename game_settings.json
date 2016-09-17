@@ -26,5 +26,13 @@
     "desc": "How long should be item displayed",
     "section": "game",
     "key":"item_display"
+  },
+  {
+    "type": "options",
+    "title": "Noise level",
+    "desc": "How much much noise should be applied on the shape",
+    "section": "game",
+    "key":"noise_level",
+    "options": ["0", "0.7", "0.8", "0.9", "0.95", "0.99"]
   }
 ]
