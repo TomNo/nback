@@ -141,11 +141,11 @@ class BasicCharacterShape(BaseLabelShape):
 
 
 @Shapes.register
-class NumericShape(BasicNumericShape):
-    """Random numbers between 10-90 are picked as shapes"""
-    MAX_NUM = 10
+class NumericShape(BaseLabelShape):
+    """Random numbers between 100-999 are picked as shapes"""
     MIN_NUM = 100
-
+    MAX_NUM = 999
+    SHAPES = shuffle(map(str, range(MIN_NUM, MAX_NUM)))[:Shapes.MAX_SHAPES]
 
 @Shapes.register
 class WordShape(BaseLabelShape):

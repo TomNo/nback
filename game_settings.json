@@ -34,5 +34,13 @@
     "section": "game",
     "key":"noise_level",
     "options": ["0", "0.7", "0.8", "0.9", "0.95", "0.99"]
+  },
+  {
+    "type": "options",
+    "title": "Shape type",
+    "desc": "Various shape types: words, numbers, letters...",
+    "section": "game",
+    "key":"shape_type",
+    "options": ["basic_numeric", "basic_character", "word", "numeric"]
   }
 ]

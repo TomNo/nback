@@ -201,6 +201,7 @@ class GameLayout(GridLayout):
         self.step_duration = float(self._get_config("step_duration"))
         self.item_display = float(self._get_config("item_display"))
         self.noise_level = float(self._get_config("noise_level"))
+        self.shape_type = str(self._get_config("shape_type"))
 
     def _action_keys(self, window, key, *args):
         # bind to 'position match' and 'shape match'
@@ -242,7 +243,7 @@ class GameLayout(GridLayout):
         self.add_widget(overall_info)
 
         self.cells = []
-        cell_shape_cls = Shapes.get()
+        cell_shape_cls = Shapes.get(self.shape_type)
         for _ in xrange(self.GRID_SIZE):
             label = cell_shape_cls(self.noise_level)
             self.cells.append(label)
