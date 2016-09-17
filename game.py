@@ -206,13 +206,14 @@ class Cell(Label):
                 with self.canvas:
                     self.shape_box = Rectangle(size=self.size, pos=self.pos,
                                                texture=self._label.texture)
+                self.bind(pos=self.reposition_shape_box,
+                          size=self.resize_shape_box)
             center_x = self.center_x - self._label.texture.size[0] / 2
             center_y = self.center_y - self._label.texture.size[1] / 2
             self.shape_box.pos = (center_x, center_y)
             self.shape_box.size = self._label.texture.size
             self.shape_box.texture = self._label.texture
             self.text = ""
-            self.bind(pos=self.reposition_shape_box, size=self.resize_shape_box)
 
     def clear(self):
         if self.noise_level:
@@ -242,7 +243,7 @@ class GameLayout(GridLayout):
     STATS_POPUP_SIZE_HINT = (.35, .35)
     INFO_LABEL_SIZE_HINT = (.1, .1)
     GRID_SIZE = 9
-    MIN_TIME = 0
+    MIN_TIME = 0.3
 
     iter = NumericProperty(None)
     p_errors = NumericProperty(None)
@@ -340,14 +341,6 @@ class GameLayout(GridLayout):
         self.a_shape, self.a_position = self.rand_shape(), self.rand_position()
         self.actual_cell = self.cells[self.a_position]
         self.actual_cell.set_shape(str(self.a_shape))
-        # from collections import Counter
-        # print([ord(i) for i in self.actual_cell._label.texture.pixels])
-        # print(Counter([str(i) for i in self.actual_cell._label.texture.pixels]))
-        # Clock.schedule_once(self.actual_cell.apply_noise, self.MIN_TIME)
-        # self.actual_cell._label.refresh()
-        # print(dir(self.actual_cell.canvas))
-        # from collections import Counter
-        # print(Counter([str(i) for i in self.actual_cell.pixels]))
         self.p_clicked = False
         self.n_clicked = False
 
