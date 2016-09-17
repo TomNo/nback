@@ -26,6 +26,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 
 from basic_screen import BasicScreen
+from shapes import Shapes
+
 
 # TODO too much code duplication
 # TODO there should be separate class for statistics
@@ -167,64 +169,6 @@ class TestRgbaToRgb(unittest.TestCase):
         self.assertTrue(exception_raised, "Exception was not raised.")
 
 
-class Cell(Label):
-
-    SHAPE_COLOR = [255, 255, 255]
-    BACKGROUND_COLOR = [0, 0, 0]
-    PADDING = 30
-    FONT_SIZE = '3cm'
-    NOISE_LEVEL = 0.95
-
-    def __init__(self, noise_level=NOISE_LEVEL):
-
-        super(Cell, self).__init__(font_size = self.FONT_SIZE)
-        self.shape_box = None
-        self.noise_level = noise_level
-
-    def reposition_shape_box(self, *largs):
-        self.shape_box.pos = self.pos
-
-    def resize_shape_box(self, *largs):
-        self.shape_box.size = self.size
-
-    def set_shape(self, shape):
-        self.text = shape
-
-        if self.noise_level:
-            self._label.refresh()
-            self.texture_buffer = numpy.fromstring(self._label.texture.pixels,
-                                               dtype=numpy.uint8)
-            alphas = self.texture_buffer[RGBA_SIZE - 1::RGBA_SIZE]
-            for index, item in enumerate(alphas):
-                if item != 0 and random.random() < self.NOISE_LEVEL:
-                    self.texture_buffer[(index + 1) * RGBA_SIZE - 1] = 0
-
-            self._label.texture.blit_buffer(self.texture_buffer,
-                                            colorfmt='rgba',
-                                            bufferfmt='ubyte')
-            if not self.shape_box:
-                with self.canvas:
-                    self.shape_box = Rectangle(size=self.size, pos=self.pos,
-                                               texture=self._label.texture)
-                self.bind(pos=self.reposition_shape_box,
-                          size=self.resize_shape_box)
-            center_x = self.center_x - self._label.texture.size[0] / 2
-            center_y = self.center_y - self._label.texture.size[1] / 2
-            self.shape_box.pos = (center_x, center_y)
-            self.shape_box.size = self._label.texture.size
-            self.shape_box.texture = self._label.texture
-            self.text = ""
-
-    def clear(self):
-        if self.noise_level:
-            self.texture_buffer.fill(0)
-            self._label.texture.blit_buffer(self.texture_buffer, colorfmt='rgba',
-                                            bufferfmt='ubyte')
-            self.shape_box.texture = self._label.texture
-        else:
-            self.text = ""
-
-
 GREEN = (0,1,0,1)
 RED = (1,0,0,1)
 
@@ -238,8 +182,7 @@ class GameLayout(GridLayout):
     EVALUATE_INTERVAL = 0.3
     DEFAULT_BUTTON_COLOR = (0.8, 0.8, 0.8, 1)
     BTN_SIZE_HINT = (0.3, 0.3)
-    SHAPES = range(1,10)
-    POSITIONS = range(9)
+    RAND_RANGE = range(9)
     STATS_POPUP_SIZE_HINT = (.35, .35)
     INFO_LABEL_SIZE_HINT = (.1, .1)
     GRID_SIZE = 9
@@ -299,8 +242,9 @@ class GameLayout(GridLayout):
         self.add_widget(overall_info)
 
         self.cells = []
+        cell_shape_cls = Shapes.get()
         for _ in xrange(self.GRID_SIZE):
-            label = Cell(self.noise_level)
+            label = cell_shape_cls(self.noise_level)
             self.cells.append(label)
             self.add_widget(label)
 
@@ -332,15 +276,15 @@ class GameLayout(GridLayout):
         return random.choice(default_choice + choice_history + choice_history)
 
     def rand_shape(self):
-        return self._rand(self.SHAPES, self.shapes)
+        return self._rand(self.RAND_RANGE, self.shapes)
 
     def rand_position(self):
-        return self._rand(self.POSITIONS, self.positions)
+        return self._rand(self.RAND_RANGE, self.positions)
 
     def new_cell(self, dt=None):
         self.a_shape, self.a_position = self.rand_shape(), self.rand_position()
         self.actual_cell = self.cells[self.a_position]
-        self.actual_cell.set_shape(str(self.a_shape))
+        self.actual_cell.set_shape(self.a_shape)
         self.p_clicked = False
         self.n_clicked = False
 
