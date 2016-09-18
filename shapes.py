@@ -149,8 +149,8 @@ class NumericShape(BaseLabelShape):
 
 @Shapes.register
 class WordShape(BaseLabelShape):
-    WORDS = ["hi", "car", "bed", "dog", "cat", "hello", "juny", "july", "cow",
-             "pig", "right", "mug", "left", "lip", "map", "bat", "bet"]
+    WORDS = ["hi", "car", "bed", "dog", "cat", "hello", "june", "july", "cow",
+             "pig", "right", "mug", "left", "lip", "map", "bat", "bet", "leg"]
     SHAPES = shuffle(WORDS)[:Shapes.MAX_SHAPES]
 
 # eof
