@@ -296,7 +296,7 @@ class GameLayout(GridLayout):
         self.n_clicked = False
 
     def start(self):
-        self.iter = 0
+        self.iter = 1
         self.s_errors = 0
         self.p_errors = 0
         self.tested_positions = 0.0
@@ -395,7 +395,6 @@ class GameLayout(GridLayout):
         return c_position, c_shape, s_rate
 
     def _step(self, dt):
-        self.iter += 1
 
         if self.iter >= self.history and self.iter < self.max_iter:
             Clock.schedule_once(self._evaluate, dt - self.EVALUATE_INTERVAL)
@@ -421,6 +420,8 @@ class GameLayout(GridLayout):
             self.p_btn.disabled = False
             self.n_btn.disabled = False
             Window.bind(on_keyboard=self._action_keys)
+
+        self.iter += 1
 
     def _format_statistics(self, c_position, c_shape, s_rate):
         return "Samples count: %s\n"\
