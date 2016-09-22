@@ -4,7 +4,7 @@ N-Back
 An app to train working memory. See https://en.wikipedia.org/wiki/N-back.
 
 There are many different implementation of this exercise available. 
-I started this project to try several ideas of my own.#
+I started this project to try several ideas of my own.
 First idea - noisy shapes - this idea is based on the premise
 that brain focuses far more on noisy/blurry images thus one
 session should have greater impact on your brain activity.
