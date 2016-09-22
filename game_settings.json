@@ -38,9 +38,9 @@
   {
     "type": "options",
     "title": "Shape type",
-    "desc": "Various shape types: words, numbers, letters...",
+    "desc": "Various shape types: words, numbers, letters... when 'auto_random' is selected, on every session is chosen random shape.",
     "section": "game",
     "key":"shape_type",
-    "options": ["basic_numeric", "basic_character", "word", "numeric"]
+    "options": ["basic_numeric", "basic_character", "word", "numeric", "auto_random"]
   }
 ]

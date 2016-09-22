@@ -27,6 +27,8 @@ class Shapes(object):
     TYPES = {}
     MAX_SHAPES = 9
 
+    RANDOM_TYPE_STR = "auto_random"
+
     DEFAULT_SHAPE = "basic_numeric"
 
     REGEX_CAMEL_CASE = re.compile(r'[A-Z][a-z]+')
@@ -40,8 +42,11 @@ class Shapes(object):
 
     @classmethod
     def get(cls, shape_name=DEFAULT_SHAPE):
-        """Factory method -> return appropriate class representing give class"""
-        if shape_name not in cls.TYPES:
+        """Factory method -> return appropriate class representing given shape"""
+        if shape_name == cls.RANDOM_TYPE_STR:
+            return random.choice(cls.TYPES.values())
+
+        elif shape_name not in cls.TYPES:
             raise ValueError("Shape class %s does not exist." % shape_name)
         return cls.TYPES[shape_name]
 
