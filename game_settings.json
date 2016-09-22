@@ -15,7 +15,7 @@
   },
   {
     "type": "numeric",
-    "title": "Item duration",
+    "title": "Step duration",
     "desc": "How long should be the delay between two items",
     "section": "game",
     "key":"step_duration"
@@ -29,11 +29,19 @@
   },
   {
     "type": "options",
-    "title": "Noise level",
-    "desc": "How much much noise should be applied on the shape",
+    "title": "Start noise level",
+    "desc": "How much much noise should be applied on the displayed shape initially.",
     "section": "game",
-    "key":"noise_level",
-    "options": ["0", "0.7", "0.8", "0.9", "0.95", "0.99"]
+    "key":"start_noise_level",
+    "options": ["0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.95", "0.99"]
+  },
+  {
+    "type": "options",
+    "title": "Final noise level",
+    "desc": "How much much noise should be applied on the shape displayed shape at the end.",
+    "section": "game",
+    "key":"final_noise_level",
+    "options": ["0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.95", "0.99"]
   },
   {
     "type": "options",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import numpy
-
+from kivy.animation import Animation
 from kivy.app import App
 from kivy.graphics import (
     Canvas, Translate, Fbo, ClearColor, ClearBuffers, Scale)
@@ -199,8 +199,9 @@ class GameLayout(GridLayout):
         self.history = int(self._get_config("level"))
         self.max_iter = int(self._get_config("max_iter")) + self.history
         self.step_duration = float(self._get_config("step_duration"))
-        self.item_display = float(self._get_config("item_display"))
-        self.noise_level = float(self._get_config("noise_level"))
+        self.shape_display_duration = float(self._get_config("item_display"))
+        self.start_noise_level = float(self._get_config("start_noise_level"))
+        self.final_noise_level = float(self._get_config("final_noise_level"))
         self.shape_type = str(self._get_config("shape_type"))
 
     def _action_keys(self, window, key, *args):
@@ -215,6 +216,10 @@ class GameLayout(GridLayout):
         self.cols = 3
         self.rows = 5
         self.spacing = 5
+        # animate noise application
+        visibility = 1 - self.final_noise_level
+        self.noise_animation = Animation(shape_visibility=visibility,
+                                         duration=self.shape_display_duration)
 
         def create_info_label():
             return Label(size_hint=self.INFO_LABEL_SIZE_HINT)
@@ -245,7 +250,7 @@ class GameLayout(GridLayout):
         self.cells = []
         cell_shape_cls = Shapes.get(self.shape_type)
         for _ in xrange(self.GRID_SIZE):
-            label = cell_shape_cls(self.noise_level)
+            label = cell_shape_cls(self.start_noise_level)
             self.cells.append(label)
             self.add_widget(label)
 
@@ -286,6 +291,7 @@ class GameLayout(GridLayout):
         self.a_shape, self.a_position = self.rand_shape(), self.rand_position()
         self.actual_cell = self.cells[self.a_position]
         self.actual_cell.set_shape(self.a_shape)
+        self.noise_animation.start(self.actual_cell)
         self.p_clicked = False
         self.n_clicked = False
 
@@ -342,10 +348,11 @@ class GameLayout(GridLayout):
         popup.open()
 
     def _clear_cell(self, dt):
+        self.noise_animation.cancel(self.actual_cell)
         self.actual_cell.clear()
 
     def _schedule_cell_clearing(self):
-        Clock.schedule_once(self._clear_cell, self.item_display)
+        Clock.schedule_once(self._clear_cell, self.shape_display_duration)
 
     def _on_finish(self):
         Clock.unschedule(self._step)
@@ -406,7 +413,6 @@ class GameLayout(GridLayout):
         self.positions.append(self.a_position)
         self.shapes.append(self.a_shape)
         self.new_cell()
-        # Clock.schedule_once(self.actual_cell.apply_noise, self.MIN_TIME)
 
         # enable buttons if it make sense to click
         if self.iter >= self.history:
