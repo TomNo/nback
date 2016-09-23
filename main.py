@@ -4,6 +4,7 @@ from kivy import Config
 from kivy.uix.label import Label
 
 import about
+import statistics
 from basic_screen import BasicScreen
 from statistics import Statistics
 
@@ -33,7 +34,7 @@ BACK_KEY_CODES = [27, 1001]
 
 class MainScreen(BasicScreen):
     MENU_SPACING = 10
-    MENU_SIZE_HINT = (.3, .3)
+    MENU_SIZE_HINT = (.3, .4)
     APP_HEADING = "Dual %s-back exercise"
     HEADING_SIZE_HINT = (.3, .3)
     INFO_SIZE_HINT = (.3, .1)
@@ -70,6 +71,9 @@ class MainScreen(BasicScreen):
         def to_about_screen(instance):
             self.manager.current = "about"
 
+        def to_statistics_screen(instance):
+            self.manager.current = "statistics"
+
         def exit(instance):
             App.get_running_app().stop()
 
@@ -96,6 +100,7 @@ class MainScreen(BasicScreen):
                        orientation='vertical')
         menu_btns = [
             Button(text="Start game", on_press=to_game_screen),
+            Button(text="Statistics", on_press=to_statistics_screen),
             Button(text="Settings", on_press=to_settings_screen),
             Button(text="About", on_press=to_about_screen),
             Button(text="Exit", on_press=exit)
@@ -147,6 +152,7 @@ class NBackApp(App):
         self.sm.add_widget(MainScreen(name='menu'))
         self.sm.add_widget(game.GameScreen(name='game'))
         self.sm.add_widget(settings.SettingScreen(name='settings'))
+        self.sm.add_widget(statistics.StatisticsScreen(name='statistics'))
         self.sm.add_widget(about.AboutScreen(name='about'))
         Window.bind(on_keyboard=self._hook_keyboard)
         # return game
