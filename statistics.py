@@ -2,6 +2,7 @@
 from kivy.app import App
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.spinner import Spinner
 
@@ -153,6 +154,22 @@ class TestStatistic(unittest.TestCase):
         self.assertEqual(self.stats.success_rates(level=test_level),
                          expected_rates)
 
+    def test_delete_rows(self):
+        test_lvl = 3
+        lvl_range = range(10)
+        for lvl in lvl_range:
+            test_item = [i for i in self.TEST_ITEM]
+            test_item[self.LEVEL_COL] = lvl
+            self.stats.add(*test_item)
+
+        # delte only one entry
+        self.stats.delete_rows(test_lvl)
+        self.assertEqual(len(self.stats.get(test_lvl)), len(lvl_range) - 1)
+
+        # delete all entries
+        self.stats.delete_rows()
+        self.assertEqual(len(self.stats.get()), 0)
+
 
 DATE_ARG = "date"
 
@@ -222,12 +239,18 @@ class Statistics(object):
                                     item_count))
         self.connection.commit()
 
-    def get(self, level):
-        """Gather new statistics for given n-back level"""
-        q = "SELECT %s, %s, %s FROM %s where %s == ?"
+    def get(self, level=None):
+        """Gather new statistics for given n-back level,
+        if level is not specified gather stats for all levels """
+        q = "SELECT %s, %s, %s FROM %s"
         q %= (self.POSITION_COL, self.SHAPE_COL, self.SUCCESS_COL,
-              self.TABLE_NAME, self.LEVEL_COL)
-        cur = self.connection.execute(q, (level,))
+              self.TABLE_NAME)
+        params = ()
+        if level is None:
+            q += " where %s == ?" % self.LEVEL_COL
+            params = (level,)
+
+        cur = self.connection.execute(q, params)
         return cur.fetchall()
 
     @set_date_if_not_set
@@ -266,8 +289,6 @@ class Statistics(object):
 
     def success_rates(self, level=None):
         q = "select %s from %s where %s = ? ORDER BY %s ASC"
-        params = None
-        values = None
         # if level is None select all success rates for any level
         if level is None:
             params = (self.SUCCESS_COL, self.TABLE_NAME, 1,
@@ -289,6 +310,15 @@ class Statistics(object):
         levels = [row[0] for row in rows.fetchall()]
         return set(levels)
 
+    def delete_rows(self, level=None):
+        q = "DELETE FROM %s" % self.TABLE_NAME
+        params = ()
+        if level is not None:
+            q += " WHERE %s=?" % self.LEVEL_COL
+            params = (level,)
+        self.connection.execute(q, params)
+        self.connection.commit()
+
 class SuccessGraph(object):
 
     PLOT_LINE_COLOR = [1, 0, 0, 1]
@@ -309,19 +339,27 @@ class SuccessGraph(object):
                             y_grid_label=True, x_grid_label=True, padding=10,
                             xmin=0, ymin=0, ymax=self.Y_MAX_VAL,
                             xmax=self.HISTORY_MAX)
-        self._graph.add_plot(self._plot)
+        self.level = None
+        self.stats = App.get_running_app().stats
         self.display_level(self.DEFAULT_LEVEL)
+        self._graph.add_plot(self._plot)
 
     def display_level(self, level):
         if self.DEFAULT_LEVEL == level:
-            level = None
+            self.level = None
         else:
-            level = int(level)
-        success_rates =  App.get_running_app().stats.success_rates(level)
+            self.level = int(level)
+        success_rates =  self.stats.success_rates(self.level)
         self._plot.points = [(x, y) for x, y in enumerate(success_rates)]
 
     def get_view(self):
         return self._graph
+
+    def clear_statistics(self, *largs):
+        """Delete actually selected statistics"""
+        self.stats.delete_rows(self.level)
+        self.display_level(self.DEFAULT_LEVEL)
+
 
 class StatisticsScreen(BasicScreen):
 
@@ -330,14 +368,17 @@ class StatisticsScreen(BasicScreen):
     HEADING_SIZE_HINT = (1, 0.05)
 
     STATISTICS_SIZE_HINT = (1, 0.2)
-    STATISTICS_INFO_TEXT = "Select 'N'- back level in order \nto display specific" \
-                           " statistics:"
+    STATISTICS_INFO_TEXT = "Select 'N'- back level in order \nto display or " \
+                           "remove\nspecific statistics:"
     STATISTICS_INFO_FONT_SIZE = "15sp"
-    STATISTICS_INFO_SIZE_HINT = (0.65, .1)
+    STATISTICS_INFO_SIZE_HINT = (0.65, .25)
 
     STATISTICS_ANCHOR_SIZE_HINT = (0.3, 1)
 
-    SPINNER_SIZE_HINT = (1, 0.1)
+    SPINNER_SIZE_HINT = (1, 0.7)
+
+    CLEAR_BTN_TEXT = "Clear statistics"
+    CLEAR_BTN_SIZE_HINT = (1, 0.7)
 
     def _build_heading_view(self):
         """Adds screen heading"""
@@ -348,6 +389,17 @@ class StatisticsScreen(BasicScreen):
         anchor_layout.add_widget(heading_label)
         return anchor_layout
 
+    def _get_spinner_choices(self):
+        level_played = App.get_running_app().stats.played_levels()
+        level_played = [str(lvl) for lvl in level_played]
+
+        spinner_choices = [SuccessGraph.DEFAULT_LEVEL] + level_played
+        return spinner_choices
+
+    def _delete_statistics(self, *largs):
+        self.graph.clear_statistics()
+        self.spinner.values = self._get_spinner_choices()
+        self.spinner.text = self.graph.DEFAULT_LEVEL
 
     def _build_statistics_view(self):
         """Adds spinner and graph with default values for overall progress"""
@@ -357,14 +409,8 @@ class StatisticsScreen(BasicScreen):
         self.graph = SuccessGraph()
         box_layout.add_widget(self.graph.get_view())
 
-        level_played = App.get_running_app().stats.played_levels()
-        level_played = [str(lvl) for lvl in level_played]
-
-        spinner_choices = [SuccessGraph.DEFAULT_LEVEL] + level_played
-
         anchor_layout = AnchorLayout(anchor_y='top', anchor_x="center",
                                      size_hint=self.STATISTICS_ANCHOR_SIZE_HINT)
-
 
         selection_layout = BoxLayout(orientation="vertical",
                                      size_hint=self.STATISTICS_INFO_SIZE_HINT,
@@ -373,12 +419,20 @@ class StatisticsScreen(BasicScreen):
         info_label = Label(text=self.STATISTICS_INFO_TEXT,
                            font_size=self.STATISTICS_INFO_FONT_SIZE)
 
-        spinner = Spinner(text=SuccessGraph.DEFAULT_LEVEL,
-                          values=spinner_choices,
-                          size_hint=self.SPINNER_SIZE_HINT)
+        self.spinner = Spinner(text=SuccessGraph.DEFAULT_LEVEL,
+                               values=self._get_spinner_choices(),
+                               size_hint=self.SPINNER_SIZE_HINT)
+
+        clear_btn = Button(text=self.CLEAR_BTN_TEXT,
+                           on_press=self._delete_statistics,
+                           size_hint=self.CLEAR_BTN_SIZE_HINT)
+
+        clear_btn_anchor = AnchorLayout(anchor_x="center", anchor_y="bottom")
+        clear_btn_anchor.add_widget(clear_btn)
 
         selection_layout.add_widget(info_label)
-        selection_layout.add_widget(spinner)
+        selection_layout.add_widget(self.spinner)
+        selection_layout.add_widget(clear_btn_anchor)
 
         anchor_layout.add_widget(selection_layout)
 
@@ -386,7 +440,9 @@ class StatisticsScreen(BasicScreen):
 
         def show_success_rate_statistics(spinner, text):
             self.graph.display_level(text)
-        spinner.bind(text=show_success_rate_statistics)
+
+        self.spinner.bind(text=show_success_rate_statistics)
+
         return box_layout
 
     def on_enter(self, *args):
