@@ -7,6 +7,8 @@ from basic_screen import BasicScreen
 __author__ = 'Tomas Novacik'
 
 
+# TODO figure out how to connect readme & about text (probably file)
+
 class TextLabel(Label):
     """Wraps long text."""
     pass
@@ -34,11 +36,13 @@ class AboutScreen(BasicScreen):
             " is given the better should be the overall performance. \n\n"
             "None of this ideas are scientifically justifiable - "
             "basically just experiments - final goal of this application "
-            "should "
-            "be statistical analysis of gathered data.\n\n"
+            "should be statistical analysis of gathered data.\n\n"
             "My tips on playing -  no rehearsing, picture previous items in"
             " your head - it should be as effortless as possible, no strategies"
-            " for different levels.\n\n"
+            " for different levels, always go for higher 'n' even though your"
+            " score is not perfect. In my experience this leads to faster gains"
+            " in 'n' level as it stresses brain more. I think that shape type"
+            " should be changed often so you do not get use to it.\n\n"
             "My reason is following - you are trying to"
             " improve your efficiency in real life - you never now which 'n' "
             "you are going to need and when you are going to need it, your"
