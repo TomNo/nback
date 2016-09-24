@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from kivy.app import App
+from kivy.garden.graph import Graph, MeshLinePlot
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -7,9 +8,7 @@ from kivy.uix.label import Label
 from kivy.uix.spinner import Spinner
 
 # it is necessary to patch the graph package and set stencil_buffer to false
-# otherwise points are not visible
-from kivy.garden.graph import Graph, MeshLinePlot
-
+# otherwise points of the graph are not visible
 Graph._with_stencilbuffer = False
 
 from basic_screen import BasicScreen
@@ -22,8 +21,11 @@ import unittest
 import sqlite3 as lite
 
 
-class TestStatistic(unittest.TestCase):
+# TODO move clear_btn to the bottom
+# TODO set more appropriate ticking in graph
+# TODO statistics method are not much logical -> it should be refactored
 
+class TestStatistic(unittest.TestCase):
     TEST_DB_NAME = "test_statistics.sqlite3"
     NAME_COL = 1
     LEVEL_COL = 0
@@ -109,7 +111,7 @@ class TestStatistic(unittest.TestCase):
         expected_success_rate = 0.0
         items_count = 0.0
         for row in rows:
-            expected_success_rate += row[self.SUCCESS_RATE_COL] *\
+            expected_success_rate += row[self.SUCCESS_RATE_COL] * \
                                      row[self.ITEM_COUNT_COL]
             items_count += row[self.ITEM_COUNT_COL]
 
@@ -119,7 +121,7 @@ class TestStatistic(unittest.TestCase):
     def test_played_levels(self):
         # no items
         self.assertEqual(len(self.stats.played_levels()), 0)
-        expected_levels = set(range(1,6))
+        expected_levels = set(range(1, 6))
         for _ in xrange(2):
             for i in expected_levels:
                 # add 5 items with different levels
@@ -143,7 +145,7 @@ class TestStatistic(unittest.TestCase):
     def test_success_rates_specific_level(self):
         test_rates = [0.1, 0.2, 0.4, 0.5, 0.3]
         test_level = 3
-        span = range(1,3)
+        span = range(1, 3)
         for addition in span:
             for index, item in enumerate(test_rates):
                 test_item = [y for y in self.TEST_ITEM]
@@ -173,9 +175,11 @@ class TestStatistic(unittest.TestCase):
 
 DATE_ARG = "date"
 
+
 def set_date_if_not_set(fn):
     """Automatically sets the date argument of a function/method
     to current date if not set."""
+
     def wrapper(*args, **kwargs):
         # check that date arg is present
         arg_names = inspect.getargspec(fn)[0]
@@ -188,6 +192,7 @@ def set_date_if_not_set(fn):
         if DATE_ARG not in kwargs and len(args) <= date_position:
             kwargs[DATE_ARG] = datetime.datetime.now()
         return fn(*args, **kwargs)
+
     return wrapper
 
 
@@ -203,27 +208,25 @@ class Statistics(object):
     LEVEL_COL = "level"
     DATE_COL = "date"
     COUNT_COL = "count"
-    TABLE_COLS = [ DATE_COL, LEVEL_COL, POSITION_COL, SHAPE_COL, SUCCESS_COL,
+    TABLE_COLS = [DATE_COL, LEVEL_COL, POSITION_COL, SHAPE_COL, SUCCESS_COL,
                   COUNT_COL]
 
-    def __init__(self, db_name = DB_NAME):
+    def __init__(self, db_name=DB_NAME):
         self.db_name = db_name
         self.connection = lite.connect(self.db_name)
         if not self._table_exists(self.TABLE_NAME):
             self._create_statistics_table()
-
 
     def _table_exists(self, table_name):
         query = "SELECT name FROM sqlite_master WHERE type=? AND name=?"
         result = self.connection.execute(query, ("table", table_name))
         return bool(result.fetchone())
 
-
     def _create_statistics_table(self):
         """Create statistics table that contains current timestamp as id,
         nback level, position success rate, shape success rate,
         overall success rate and items displayed during session"""
-        q = "CREATE TABLE %s (%s date PRIMARY KEY default current_timestamp,"\
+        q = "CREATE TABLE %s (%s date PRIMARY KEY default current_timestamp," \
             "%s integer, %s real, %s real, %s real, %s integer)"
         q %= tuple([self.TABLE_NAME] + self.TABLE_COLS)
         self.connection.execute(q)
@@ -297,7 +300,7 @@ class Statistics(object):
         else:
             params = (self.SUCCESS_COL, self.TABLE_NAME, self.LEVEL_COL,
                       self.DATE_COL)
-            values = (level, )
+            values = (level,)
         q %= params
         rates = [i[0] for i in self.connection.execute(q, values).fetchall()]
         return rates
@@ -319,8 +322,13 @@ class Statistics(object):
         self.connection.execute(q, params)
         self.connection.commit()
 
-class SuccessGraph(object):
 
+def round_up(num):
+    """Round float to int, but always round up"""
+    return int(round(num + .5))
+
+
+class SuccessGraph(object):
     PLOT_LINE_COLOR = [1, 0, 0, 1]
     DEFAULT_LEVEL = "Overall"
 
@@ -331,10 +339,12 @@ class SuccessGraph(object):
 
     HISTORY_MAX = 200
 
+    X_MAJOR_TICKS_SCALE = 8.0
+
     def __init__(self):
         self._plot = MeshLinePlot(color=self.PLOT_LINE_COLOR)
         self._graph = Graph(xlabel=self.X_LABEL, ylabel=self.Y_LABEL,
-                            x_ticks_major=25, x_ticks_minor=5,
+                            x_ticks_minor=5,
                             y_ticks_major=10, y_ticks_minor=2, y_grid=True,
                             y_grid_label=True, x_grid_label=True, padding=10,
                             xmin=0, ymin=0, ymax=self.Y_MAX_VAL,
@@ -349,8 +359,15 @@ class SuccessGraph(object):
             self.level = None
         else:
             self.level = int(level)
-        success_rates =  self.stats.success_rates(self.level)
+        success_rates = self.stats.success_rates(self.level)
+        # limit items to last HISTROY_MAX items
+        success_rates = success_rates[-self.HISTORY_MAX:]
         self._plot.points = [(x, y) for x, y in enumerate(success_rates)]
+        points_count = len(success_rates)
+        self._graph.xmax = points_count
+
+        self._graph.x_ticks_major = round_up(points_count /
+                                             self.X_MAJOR_TICKS_SCALE)
 
     def get_view(self):
         return self._graph
@@ -362,7 +379,6 @@ class SuccessGraph(object):
 
 
 class StatisticsScreen(BasicScreen):
-
     HEADING_TEXT = "Statistics"
     HEADING_FONT_SIZE = "55sp"
     HEADING_SIZE_HINT = (1, 0.05)
@@ -447,12 +463,12 @@ class StatisticsScreen(BasicScreen):
 
     def on_enter(self, *args):
         box_layout = BoxLayout(orientation="vertical")
-        for widget in [self._build_heading_view(), self._build_statistics_view()]:
+        for widget in [self._build_heading_view(),
+                       self._build_statistics_view()]:
             box_layout.add_widget(widget)
         anchor_layout = AnchorLayout(anchor_x='center', anchor_y='center')
         anchor_layout.add_widget(box_layout)
         self.add_widget(anchor_layout)
-
 
     def on_leave(self, *args):
         self.clear_widgets()
