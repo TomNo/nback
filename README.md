@@ -24,3 +24,12 @@ improve your efficiency in real life - you never now which 'n'
 you are going to need and when you are going to need it, your
 brain should do this exercise ideally all the time in 
 the background so you can access data from relatively short past.
+
+Installation
+=====
+1. install python and pip first through your package manager
+2. install necessary python packages: pip install -r requirements.txt
+
+Run
+=====
+python main.py
